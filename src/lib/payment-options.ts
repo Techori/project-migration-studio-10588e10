@@ -18,14 +18,6 @@ export function youngInnovatorsPaymentKey(schoolClass: number): PaymentOptionKey
   return null;
 }
 
-/** Accepts a Razorpay button ID ("pl_…") or the full embed code and returns just the ID; "" clears it. */
-export function parseRazorpayButtonId(input: string): string | null | undefined {
-  const raw = input.trim();
-  if (!raw) return null;
-  const match = raw.match(/data-payment_button_id\s*=\s*["']?(pl_[A-Za-z0-9]{6,40})/) ?? raw.match(/^(pl_[A-Za-z0-9]{6,40})$/);
-  return match?.[1];
-}
-
 /** Accepts a payment page link or a Zoho Checkout `<iframe>` embed code and returns the https link; "" clears it. */
 export function normalizePaymentLink(input: string): string | null | undefined {
   const raw = input.trim();

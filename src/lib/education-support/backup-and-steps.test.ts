@@ -3,7 +3,7 @@ import { backupAckNumber, fromSheetRow, isBackupAck, sheetHeaders, toSheetRow } 
 import { buildSheetRecord } from "./record-mapping";
 import { applicationTypeChangeBlocker, editBlocker } from "./editing";
 import { ackNumberPattern, educationBasicSchema, educationLookupSchema, eduStepKeys, firstDetailsStep } from "./rules";
-import { parseRazorpayButtonId, youngInnovatorsPaymentKey } from "../payment-options";
+import { isZohoCheckoutUrl, normalizePaymentLink, paymentIdFromSearch, readPaymentMessage, readStoredPaymentId, youngInnovatorsPaymentKey, zohoPrefillUrl, PAYMENT_MESSAGE_TYPE } from "../payment-options";
 
 describe("Google Sheet backup", () => {
   it("keeps the acknowledgement number and form answers when written and read back", () => {
@@ -67,11 +67,35 @@ describe("Editing limits", () => {
 });
 
 describe("Admin payment options", () => {
-  it("accepts a Razorpay button ID or its full embed code", () => {
-    expect(parseRazorpayButtonId("pl_ABC123xyz")).toBe("pl_ABC123xyz");
-    expect(parseRazorpayButtonId('<form><script src="https://checkout.razorpay.com/v1/payment-button.js" data-payment_button_id="pl_QwErTy1234" async> </script> </form>')).toBe("pl_QwErTy1234");
-    expect(parseRazorpayButtonId("")).toBeNull();
-    expect(parseRazorpayButtonId("<script>alert(1)</script>")).toBeUndefined();
+  it("accepts the Zoho Checkout embed code and keeps only its https page address", () => {
+    const code = '<iframe width="768" height="998" src="https://zohosecurepay.in/checkout/ue370226-iwkpgy8mqbvm2/Registration-Fee-Payment-for-education-sponsorship" style="border:none;"></iframe>';
+    expect(normalizePaymentLink(code)).toBe("https://zohosecurepay.in/checkout/ue370226-iwkpgy8mqbvm2/Registration-Fee-Payment-for-education-sponsorship");
+    expect(normalizePaymentLink("")).toBeNull();
+    expect(normalizePaymentLink('<iframe src="javascript:alert(1)"></iframe>')).toBeUndefined();
+    expect(normalizePaymentLink("http://zohosecurepay.in/checkout/x")).toBeUndefined();
+  });
+  it("only Zoho Checkout pages are shown inside the form", () => {
+    expect(isZohoCheckoutUrl("https://zohosecurepay.in/checkout/abc")).toBe(true);
+    expect(isZohoCheckoutUrl("https://zohosecurepay.in.evil.com/checkout/abc")).toBe(false);
+    expect(isZohoCheckoutUrl("https://rzp.io/rzp/Qxq0Jnp")).toBe(false);
+  });
+  it("pre-fills the Zoho page with the student's name, email and mobile", () => {
+    const u = new URL(zohoPrefillUrl("https://zohosecurepay.in/checkout/abc", { name: "Asha Kumari Verma", email: "a@example.com", mobile: "9876543210" }));
+    expect(u.searchParams.get("first_name")).toBe("Asha");
+    expect(u.searchParams.get("last_name")).toBe("Kumari Verma");
+    expect(u.searchParams.get("mobile")).toBe("9876543210");
+  });
+  it("reads the payment ID from the return address and ignores unsafe values", () => {
+    expect(paymentIdFromSearch(new URLSearchParams("payment_id=2000000123456789"))).toBe("2000000123456789");
+    expect(paymentIdFromSearch(new URLSearchParams("payment_id=<script>"))).toBeNull();
+    expect(paymentIdFromSearch(new URLSearchParams(""))).toBeNull();
+  });
+  it("hands the payment ID to the form only from our own message format and for 2 hours", () => {
+    expect(readPaymentMessage({ type: PAYMENT_MESSAGE_TYPE, paymentId: "2000000123456789" })).toBe("2000000123456789");
+    expect(readPaymentMessage({ type: "other", paymentId: "2000000123456789" })).toBeNull();
+    const now = 1_000_000_000_000;
+    expect(readStoredPaymentId(JSON.stringify({ id: "2000000123456789", at: now - 60_000 }), now)).toBe("2000000123456789");
+    expect(readStoredPaymentId(JSON.stringify({ id: "2000000123456789", at: now - 3 * 60 * 60 * 1000 }), now)).toBeNull();
   });
   it("Young Innovators uses the fee band for the student's class", () => {
     expect(youngInnovatorsPaymentKey(7)).toBe("young_innovators_6_8");
