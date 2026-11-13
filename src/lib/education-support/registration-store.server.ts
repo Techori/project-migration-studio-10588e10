@@ -2,10 +2,10 @@
 // If the database is unavailable, the sheet still receives the registration with a backup acknowledgement number.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { applicationTypes, educationCoreSchema, type ApplicationType, type EducationCoreValues, type EducationLookup, type EducationPrivateValues } from "./rules";
+import { applicationTypes, educationBasicSchema, educationCoreSchema, type ApplicationType, type EducationBasicValues, type EducationCoreValues, type EducationLookup, type EducationPrivateValues } from "./rules";
 import { stateCodes } from "./numbering";
-import { backupAckNumber, istTimestamp, isBackupAck, type FormFieldKey, type SheetRecord } from "./sheet";
-import { applicationTypeChangeBlocker, editBlocker, sameMobile, type EditActor } from "./editing";
+import { backupAckNumber, emptyRecord, formFieldKeys, istTimestamp, isBackupAck, type FormFieldKey, type SheetRecord } from "./sheet";
+import { applicationTypeChangeBlocker, editBlocker, type EditActor } from "./editing";
 import { buildSheetRecord, dbRegistrationColumns, dbRowToSheetRecord, dbRowToValues, valuesToDbColumns, type DbRegistrationRow } from "./record-mapping";
 import { appendSheetRecords, findSheetRecord, readAllSheetRecords, upsertSheetRecord, writeSheetRows } from "./sheets.server";
 
@@ -15,7 +15,7 @@ type Row = DbRegistrationRow & { id: string };
 /** An error whose message is meant for the visitor and must not trigger the backup path. */
 export class VisitorError extends Error {}
 
-const NO_MATCH = "No registration matches these details. Please check your acknowledgement number, mobile number and date of birth.";
+const NO_MATCH = "No registration matches these details. Please check your acknowledgement number, date of birth and state.";
 
 async function admin() { return (await import("@/integrations/supabase/client.server")).supabaseAdmin; }
 async function sha256Hex(value: string) {
@@ -45,91 +45,96 @@ async function coordinatorIdFor(client: Client, v: EducationCoreValues) {
 const stateCodeOf = (state: string) => stateCodes.find(s => s.name.toLowerCase() === state.trim().toLowerCase())?.code ?? "00";
 const random7 = () => crypto.getRandomValues(new Uint32Array(1))[0]! % 10_000_000;
 
-export async function saveNewRegistration(v: EducationCoreValues & EducationPrivateValues) {
-  const { limitSubmission } = await import("../submissions.server");
-  await limitSubmission(v.email, { failOpen: true });
-  const now = new Date();
-  const privateCiphertext = await encryptPrivate(v);
-  const receiptToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, "0")).join("");
-  const receiptHash = await sha256Hex(receiptToken);
-  const columns = valuesToDbColumns(v, now);
+/** Coordinator details for a referral code: RILOYD staff (BDE/BDM or CRM employee) first, then registered coordinators. */
+export async function referralCoordinator(db: Client, rawCode: string): Promise<{ code: string; name: string; mobile: string; email: string; type: string } | null> {
+  const code = rawCode.trim().toUpperCase();
+  if (!/^[A-Z0-9-]{2,40}$/.test(code)) return null;
+  const staff = (await db.from("education_staff_access").select("user_id, referral_code").eq("active", true).ilike("referral_code", code)).data?.find(s => s.referral_code.toUpperCase() === code);
+  const employee = staff ? null : (await db.from("crm_employee_profiles").select("user_id, employee_code").ilike("employee_code", code)).data?.find(e => e.employee_code.toUpperCase() === code);
+  const userId = staff?.user_id ?? employee?.user_id;
+  if (userId) {
+    const { data: profile } = await db.from("crm_employee_profiles").select("full_name, phone").eq("user_id", userId).maybeSingle();
+    const { data: user } = await db.auth.admin.getUserById(userId);
+    return { code, name: profile?.full_name ?? "", mobile: profile?.phone ?? "", email: user?.user?.email ?? "", type: "RILOYD Employee" };
+  }
+  const { data: c } = await db.from("coordinators").select("full_name, phone, email").eq("active", true).eq("referral_code", code).maybeSingle();
+  return c ? { code, name: c.full_name, mobile: c.phone, email: c.email, type: "Other" } : null;
+}
 
+/** Full form values with empty strings for everything not yet entered. */
+function withBlanks(values: Partial<Record<string, unknown>>): Record<FormFieldKey, string | boolean> {
+  const v = emptyRecord().values;
+  for (const k of formFieldKeys) { const x = values[k]; if (typeof x === "string" || typeof x === "boolean") v[k] = x; }
+  v.nationality = v.nationality || "Indian";
+  return v;
+}
+
+/** Step 1: save basic details and issue the acknowledgement number (database first, Google Sheet always). */
+export async function startRegistration(basic: EducationBasicValues) {
+  const { limitSubmission } = await import("../submissions.server");
+  await limitSubmission(basic.email, { failOpen: true });
+  const now = new Date();
+  const receiptHash = await sha256Hex(Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16)).join(""));
+  const values = withBlanks(basic);
+  let referral: Awaited<ReturnType<typeof referralCoordinator>> = null;
   let saved: { ack_number: string; created_at: string } | null = null;
   try {
     const db = await admin();
-    const coordinatorId = await coordinatorIdFor(db, v);
-    const { ruleFlagsFor } = await import("./checks.server");
-    const checkedAt = now.toISOString();
-    const { flags } = await ruleFlagsFor(db, {
-      student_name: v.studentName, father_name: v.fatherName, mother_name: v.motherName, guardian_name: v.guardianName || null,
-      student_category: v.studentCategory, current_class: columns.current_class, course_name: columns.course_name, date_of_birth: v.dateOfBirth, created_at: checkedAt,
-      application_type: v.applicationType, registration_fee: columns.registration_fee, payment_status: "pending", payment_reference: null,
-      without_coordinator: v.withoutCoordinator, coordinator_code: columns.coordinator_code, coordinator: { name: v.coordinatorName },
-    }, v.bankHolder);
+    if (basic.coordinatorCode) {
+      referral = await referralCoordinator(db, basic.coordinatorCode).catch(() => null);
+      if (referral) Object.assign(values, { withoutCoordinator: false, coordinatorCode: referral.code, coordinatorName: referral.name, coordinatorMobile: referral.mobile, coordinatorEmail: referral.email, coordinatorType: referral.type });
+    }
+    const columns = valuesToDbColumns(values as unknown as EducationCoreValues, now);
     const { data, error } = await db.from("education_support_registrations").insert({
-      ...columns, coordinator_id: coordinatorId, review_flags: flags, flags_checked_at: checkedAt,
-      receipt_token_hash: receiptHash, private_details_ciphertext: privateCiphertext, aadhaar_last_four: v.aadhaarNumber.slice(-4),
+      ...columns, declarations: {}, guardian_consent_at: null, form_status: "started",
+      coordinator_id: referral ? await coordinatorIdFor(db, values as unknown as EducationCoreValues) : null,
+      receipt_token_hash: receiptHash,
     }).select("ack_number, created_at").single();
     if (error || !data) throw error ?? new Error("No row returned");
     saved = data;
   } catch (e) {
     console.error("Education registration could not be saved in the database; using the Google Sheet backup.", e);
   }
-
-  const ackNumber = saved?.ack_number ?? backupAckNumber(now, stateCodeOf(v.state), random7());
-  const record = buildSheetRecord(v as unknown as Record<FormFieldKey, string | boolean>, {
-    ackNumber, submittedAt: istTimestamp(saved ? new Date(saved.created_at) : now), savedInDatabase: saved ? "Yes" : "Backup only",
-    fee: String(columns.registration_fee), bankLast4: v.bankAccount.slice(-4), aadhaarLast4: v.aadhaarNumber.slice(-4), privateCiphertext, receiptHash,
+  const ackNumber = saved?.ack_number ?? backupAckNumber(now, stateCodeOf(basic.state), random7());
+  const fee = applicationTypes[basic.applicationType as ApplicationType].fee;
+  const record = buildSheetRecord(values, {
+    ackNumber, submittedAt: istTimestamp(saved ? new Date(saved.created_at) : now), savedInDatabase: saved ? "Yes" : "Backup only", formStatus: "Started",
+    fee: String(fee), declarations: "No", receiptHash,
   });
   try { await appendSheetRecords([record]); }
   catch (e) {
     console.error("Education registration could not be copied to the Google Sheet.", e);
     if (!saved) throw new Error("Your registration could not be saved. Please try again in a few minutes.");
   }
-  return {
-    ackNumber, createdAt: saved?.created_at ?? now.toISOString(), receiptToken, fee: columns.registration_fee,
-    applicationType: v.applicationType as ApplicationType, coordinatorName: v.withoutCoordinator ? "" : v.coordinatorName,
-  };
+  return { ackNumber, createdAt: saved?.created_at ?? now.toISOString(), fee, applicationType: basic.applicationType as ApplicationType, values };
 }
 
-export async function savePaymentReference(data: { ackNumber: string; receiptToken: string; reference: string }) {
+export async function savePaymentReference(data: { verify: EducationLookup; reference: string }) {
   const { limitSubmission } = await import("../submissions.server");
-  await limitSubmission(data.ackNumber, { failOpen: true });
-  const hash = await sha256Hex(data.receiptToken);
-  let savedRow: Row | null = null;
-  let dbReachable = false;
-  try {
+  await limitSubmission(`pay:${data.verify.ackNumber}`, { failOpen: true });
+  const found = await locate(data.verify);
+  const bad = new VisitorError("This registration could not be updated. Please contact the Foundation team with your acknowledgement number.");
+  if (found.source === "database") {
     const db = await admin();
     const { data: rows, error } = await db.from("education_support_registrations")
       .update({ payment_reference: data.reference, payment_reference_at: new Date().toISOString(), payment_status: "reference_submitted" })
-      .eq("ack_number", data.ackNumber).eq("receipt_token_hash", hash).in("payment_status", ["pending", "reference_submitted"])
-      .select(`id, ${dbRegistrationColumns}`);
+      .eq("id", found.row.id).in("payment_status", ["pending", "reference_submitted"]).select(`id, ${dbRegistrationColumns}`);
     if (error?.code === "23505") throw new VisitorError("This transaction ID has already been used for another registration. Each payment ID can be used only once — please check your Razorpay receipt.");
-    if (error) throw error;
-    dbReachable = true;
-    savedRow = (rows?.[0] as Row | undefined) ?? null;
-    if (savedRow) {
-      try { const { refreshEducationChecks } = await import("./checks.server"); await refreshEducationChecks(db, savedRow.id, { ai: false }); }
+    if (error) throw new Error("The payment ID could not be saved. Please try again.");
+    const row = rows?.[0] as Row | undefined;
+    if (!row) throw bad;
+    if (row.form_status === "completed") {
+      try { const { refreshEducationChecks } = await import("./checks.server"); await refreshEducationChecks(db, row.id, { ai: false }); }
       catch (e) { console.error("Education checks after payment ID failed", e); }
     }
-  } catch (e) {
-    if (e instanceof VisitorError) throw e;
-    console.error("Payment ID could not be saved in the database; trying the Google Sheet backup.", e);
-  }
-  if (savedRow) {
-    try { await syncRowToSheet(savedRow); } catch (e) { console.error("Payment ID could not be copied to the Google Sheet.", e); }
+    try { await syncRowToSheet(row); } catch (e) { console.error("Payment ID could not be copied to the Google Sheet.", e); }
     return { ok: true };
   }
-  if (dbReachable && !isBackupAck(data.ackNumber)) throw new VisitorError("This registration could not be updated. Please contact the Foundation team with your acknowledgement number.");
-  let found: Awaited<ReturnType<typeof findSheetRecord>>;
-  try { found = await findSheetRecord(data.ackNumber); }
-  catch { throw new Error("The payment ID could not be saved. Please try again."); }
-  if (!found || found.record.meta.receiptHash !== hash || !["pending", "reference_submitted", ""].includes(found.record.meta.paymentStatus)) {
-    throw new VisitorError("This registration could not be updated. Please contact the Foundation team with your acknowledgement number.");
-  }
-  found.record.meta.paymentReference = data.reference;
-  found.record.meta.paymentStatus = "reference_submitted";
-  try { await writeSheetRows([found]); } catch { throw new Error("The payment ID could not be saved. Please try again."); }
+  const { record } = found.sheet;
+  if (!["pending", "reference_submitted", ""].includes(record.meta.paymentStatus)) throw bad;
+  record.meta.paymentReference = data.reference;
+  record.meta.paymentStatus = "reference_submitted";
+  try { await writeSheetRows([found.sheet]); } catch { throw new Error("The payment ID could not be saved. Please try again."); }
   return { ok: true };
 }
 
@@ -138,6 +143,7 @@ async function syncRowToSheet(row: Row, edit?: { at: Date; by: string }) {
   await upsertSheetRecord(record);
 }
 
+const sameState = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 type Located = { source: "database"; row: Row } | { source: "sheet"; sheet: NonNullable<Awaited<ReturnType<typeof findSheetRecord>>> };
 
 /** Find a registration by acknowledgement number, mobile and date of birth: database first, then the Google Sheet. */
@@ -150,7 +156,7 @@ async function locate(verify: EducationLookup): Promise<Located> {
     dbReachable = true;
     if (data) {
       const row = data as Row;
-      if (sameMobile(row.mobile, verify.mobile) && String(row.date_of_birth).slice(0, 10) === verify.dateOfBirth) return { source: "database", row };
+      if (String(row.date_of_birth).slice(0, 10) === verify.dateOfBirth && sameState(row.state, verify.state)) return { source: "database", row };
       throw new VisitorError(NO_MATCH);
     }
   } catch (e) {
@@ -160,7 +166,7 @@ async function locate(verify: EducationLookup): Promise<Located> {
   let found: Awaited<ReturnType<typeof findSheetRecord>>;
   try { found = await findSheetRecord(verify.ackNumber); }
   catch { throw new Error(dbReachable ? NO_MATCH : "Registrations cannot be opened right now. Please try again in a few minutes."); }
-  if (!found || !sameMobile(String(found.record.values.mobile), verify.mobile) || found.record.values.dateOfBirth !== verify.dateOfBirth) throw new VisitorError(NO_MATCH);
+  if (!found || found.record.values.dateOfBirth !== verify.dateOfBirth || !sameState(String(found.record.values.state), verify.state)) throw new VisitorError(NO_MATCH);
   return { source: "sheet", sheet: found };
 }
 
@@ -174,28 +180,59 @@ export async function lookupForEdit(verify: EducationLookup) {
   const blocker = editBlocker(paymentStatus, "student");
   if (blocker) throw new VisitorError(blocker);
   const values = found.source === "database" ? dbRowToValues(found.row) : found.sheet.record.values;
-  return { ackNumber: verify.ackNumber, paymentStatus, source: found.source, values: editableValues(values) };
+  const formStatus = found.source === "database" ? found.row.form_status : /^completed$/i.test(found.sheet.record.meta.formStatus) ? "completed" : "started";
+  const hasPrivateDetails = found.source === "database" ? Boolean(found.row.private_details_ciphertext) : Boolean(found.sheet.record.meta.privateCiphertext);
+  return { ackNumber: verify.ackNumber, paymentStatus, formStatus, hasPrivateDetails, source: found.source, applicationType: String(values.applicationType) as ApplicationType, fee: applicationTypes[String(values.applicationType) as ApplicationType]?.fee ?? 0, values: editableValues(values) };
 }
 
-export async function updateFromStudent(verify: EducationLookup, core: EducationCoreValues, priv: EducationPrivateValues | null) {
+/** Saves what the student has entered so far (database; Google Sheet only if the database is unavailable). */
+export async function saveProgress(verify: EducationLookup, raw: Record<string, unknown>) {
+  const basic = educationBasicSchema.parse({ ...raw, coordinatorCode: typeof raw["coordinatorCode"] === "string" ? raw["coordinatorCode"] : "" });
+  const values = { ...withBlanks(raw), ...basic };
+  const found = await locate(verify);
+  const now = new Date();
+  if (found.source === "database") {
+    const row = found.row;
+    const blocker = editBlocker(row.payment_status, "student") ?? applicationTypeChangeBlocker(row.application_type, basic.applicationType, row.payment_status, "student");
+    if (blocker) throw new VisitorError(blocker);
+    const db = await admin();
+    const columns = valuesToDbColumns(values as unknown as EducationCoreValues, now);
+    const { declarations: _d, ...rest } = columns;
+    const { error } = await db.from("education_support_registrations").update({ ...rest, guardian_consent_at: row.guardian_consent_at, updated_at: now.toISOString() }).eq("id", row.id).neq("payment_status", "paid");
+    if (!error) return { ok: true, verify: { ackNumber: verify.ackNumber, dateOfBirth: basic.dateOfBirth, state: basic.state } };
+    console.error("Progress could not be saved in the database; trying the Google Sheet.", error);
+  }
+  const sheet = found.source === "sheet" ? found.sheet : await findSheetRecord(verify.ackNumber).catch(() => null);
+  if (!sheet) throw new Error("Your progress could not be saved. Please try again.");
+  const blocker = editBlocker(sheet.record.meta.paymentStatus || "pending", "student") ?? applicationTypeChangeBlocker(String(sheet.record.values.applicationType), basic.applicationType, sheet.record.meta.paymentStatus || "pending", "student");
+  if (blocker) throw new VisitorError(blocker);
+  const next = buildSheetRecord(values, { ...sheet.record.meta, editedAt: istTimestamp(now), editedBy: "Student", fee: String(applicationTypes[basic.applicationType as ApplicationType].fee) });
+  try { await writeSheetRows([{ ...sheet, record: next }]); } catch { throw new Error("Your progress could not be saved. Please try again."); }
+  return { ok: true, verify: { ackNumber: verify.ackNumber, dateOfBirth: basic.dateOfBirth, state: basic.state } };
+}
+
+/** Final submission (also used to save later edits): all steps must be complete. */
+export async function saveFullRegistration(verify: EducationLookup, core: EducationCoreValues, priv: EducationPrivateValues | null) {
   const { limitSubmission } = await import("../submissions.server");
   await limitSubmission(`edit:${verify.ackNumber}`, { failOpen: true });
   const found = await locate(verify);
   const actor: EditActor = "student";
   const now = new Date();
   if (found.source === "database") {
+    if (!priv && !found.row.private_details_ciphertext) throw new VisitorError("Please enter your bank and Aadhaar details.");
     const db = await admin();
     return updateDatabaseRow(db, db, found.row, core, priv, actor, now);
   }
   const { record } = found.sheet;
+  if (!priv && !record.meta.privateCiphertext) throw new VisitorError("Please enter your bank and Aadhaar details.");
   const paymentStatus = record.meta.paymentStatus || "pending";
   const blocker = editBlocker(paymentStatus, actor) ?? applicationTypeChangeBlocker(String(record.values.applicationType), core.applicationType, paymentStatus, actor);
   if (blocker) throw new VisitorError(blocker);
-  const next: SheetRecord = buildSheetRecord(core as unknown as Record<FormFieldKey, string | boolean>, { ...record.meta, editedAt: istTimestamp(now), editedBy: "Student", fee: String(applicationTypes[core.applicationType as ApplicationType].fee) });
+  const next: SheetRecord = buildSheetRecord(core as unknown as Record<FormFieldKey, string | boolean>, { ...record.meta, formStatus: "Completed", declarations: "Yes", editedAt: istTimestamp(now), editedBy: "Student", fee: String(applicationTypes[core.applicationType as ApplicationType].fee) });
   if (priv) { next.meta.privateCiphertext = await encryptPrivate(priv); next.meta.bankLast4 = priv.bankAccount.slice(-4); next.meta.aadhaarLast4 = priv.aadhaarNumber.slice(-4); }
   try { await writeSheetRows([{ ...found.sheet, record: next }]); }
-  catch { throw new Error("Your changes could not be saved. Please try again in a few minutes."); }
-  return { ackNumber: verify.ackNumber, paymentStatus, fee: applicationTypes[core.applicationType as ApplicationType].fee, applicationType: core.applicationType as ApplicationType };
+  catch { throw new Error("Your registration could not be saved. Please try again in a few minutes."); }
+  return { ackNumber: verify.ackNumber, paymentStatus, fee: applicationTypes[core.applicationType as ApplicationType].fee, applicationType: core.applicationType as ApplicationType, createdAt: record.meta.submittedAt };
 }
 
 /** `client` performs the update (admin session or service role); `lookup` resolves coordinator codes. */
@@ -204,6 +241,7 @@ async function updateDatabaseRow(client: Client, lookup: Client, row: Row, core:
   if (blocker) throw new VisitorError(blocker);
   const update = {
     ...valuesToDbColumns(core, now), coordinator_id: await coordinatorIdFor(lookup, core), updated_at: now.toISOString(),
+    form_status: "completed", ...(row.form_status === "completed" ? {} : { completed_at: now.toISOString() }),
     ...(priv ? { private_details_ciphertext: await encryptPrivate(priv), aadhaar_last_four: priv.aadhaarNumber.slice(-4) } : {}),
   };
   let q = client.from("education_support_registrations").update(update).eq("id", row.id);
@@ -215,7 +253,7 @@ async function updateDatabaseRow(client: Client, lookup: Client, row: Row, core:
   catch (e) { console.error("Education checks after edit failed", e); }
   try { await syncRowToSheet(updated, { at: now, by: actor === "admin" ? "Admin" : "Student" }); }
   catch (e) { console.error("Edited registration could not be copied to the Google Sheet.", e); }
-  return { ackNumber: updated.ack_number, paymentStatus: updated.payment_status, fee: updated.registration_fee, applicationType: updated.application_type as ApplicationType };
+  return { ackNumber: updated.ack_number, paymentStatus: updated.payment_status, fee: updated.registration_fee, applicationType: updated.application_type as ApplicationType, createdAt: updated.created_at };
 }
 
 export async function getForAdmin(client: Client, id: string) {
