@@ -86,9 +86,8 @@ export function computeRuleFlags(v: FlagInput): ReviewFlag[] {
   else if (expected !== v.registrationFee) add("payment", "high", `Recorded fee ₹${v.registrationFee} does not match the ₹${expected} fee for this application.`);
   const ref = v.paymentReference?.trim() ?? "";
   if (!ref) add("payment", v.paymentStatus === "paid" ? "high" : "medium", v.paymentStatus === "paid" ? "Marked paid but no transaction ID was given." : "No payment transaction ID received yet.");
-  else if (!razorpayPaymentId.test(ref)) add("payment", "medium", `Transaction ID "${ref}" does not look like a Razorpay payment ID (pay_…).`);
   if (v.paymentStatus === "failed") add("payment", "high", "Payment is marked as failed.");
-  if (ref && v.paymentStatus === "reference_submitted") add("payment", "medium", "Transaction ID received; check it on Razorpay before marking the payment confirmed.");
+  if (ref && v.paymentStatus === "reference_submitted") add("payment", "medium", "Transaction ID received; check it in Zoho Checkout payments before marking the payment confirmed.");
 
   // Coordinator code
   if (!v.withoutCoordinator) {

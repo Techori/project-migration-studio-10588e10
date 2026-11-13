@@ -99,7 +99,7 @@ export function EducationSupportAdmin() {
     </form>
     {query.error && <p role="alert" className="mt-4">{query.error.message}</p>}
     {query.isPending && <p className="mt-4">Loading registrations…</p>}
-    <p className="mt-4 text-sm text-muted-foreground">{query.data?.count ?? 0} registrations · Payment status changes to confirmed only when you mark it after checking Razorpay.</p>
+    <p className="mt-4 text-sm text-muted-foreground">{query.data?.count ?? 0} registrations · Payment status changes to confirmed only when you mark it after checking Zoho Checkout payments.</p>
     <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[1040px] text-left text-sm">
       <thead className="border-b border-border bg-surface"><tr>{["Ack. no.", "Student", "Category", "Class / course", "Applied for", "Payment", "Flags", "Status", ""].map(h => <th key={h} className="px-3 py-3 font-bold">{h}</th>)}</tr></thead>
       <tbody>{query.data?.rows.map(r => <tr key={r.id} className="border-b border-border">
@@ -187,7 +187,7 @@ function ReviewChecks({ row, busy, checkedEveryFlag, setCheckedEveryFlag, note, 
     <div className="mt-4 border-t border-border pt-4">
       {row.flags_confirmed_at ? <p className="flex items-center gap-2 text-sm font-semibold text-primary"><ShieldCheck className="size-4" />Confirmed by a person on {new Date(row.flags_confirmed_at).toLocaleString("en-IN")}{row.flags_confirm_note ? ` — ${row.flags_confirm_note}` : ""}</p> :
         <form className="grid gap-3" onSubmit={e => { e.preventDefault(); onConfirm(); }}>
-          <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={checkedEveryFlag} onChange={e => setCheckedEveryFlag(e.target.checked)} />I have personally checked {flags.length ? "every flag above" : "this registration"} against the student's details and the Razorpay payment.</label>
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={checkedEveryFlag} onChange={e => setCheckedEveryFlag(e.target.checked)} />I have personally checked {flags.length ? "every flag above" : "this registration"} against the student's details and the Zoho payment.</label>
           <input aria-label="Confirmation note" value={note} maxLength={500} onChange={e => setNote(e.target.value)} placeholder="Note (optional), e.g. bank account is in father's name — verified" className="h-9 rounded-md border border-border bg-background px-2 text-sm" />
           <Button type="submit" variant="outline" className="justify-self-start" disabled={busy || !checkedEveryFlag || !row.flags_checked_at}><ShieldCheck />Confirm check</Button>
         </form>}
