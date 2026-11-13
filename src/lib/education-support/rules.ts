@@ -4,9 +4,9 @@ import { coordinatorTypes, educationSectors, genders, guardianRelationships, ind
 // Browser-safe registration rules shared by the page, server functions, admin and tests.
 
 export const applicationTypes = {
-  sponsorship: { fee: 149, maxAward: null, paymentLink: "https://rzp.io/rzp/Qxq0Jnp", en: "For Sponsorship", hi: "स्पॉन्सरशिप के लिए" },
-  scholarship_25k: { fee: 249, maxAward: 25000, paymentLink: "https://rzp.io/rzp/IO7EI7Q", en: "Scholarship up to ₹25,000", hi: "₹25,000 तक छात्रवृत्ति" },
-  scholarship_50k: { fee: 599, maxAward: 50000, paymentLink: "https://rzp.io/rzp/6NAOBYdt", en: "Scholarship up to ₹50,000", hi: "₹50,000 तक छात्रवृत्ति" },
+  sponsorship: { fee: 149, maxAward: null, paymentLink: "https://zohosecurepay.in/checkout/ue370226-iwkpgy8mqbvm2/Registration-Fee-Payment-for-education-sponsorship", en: "For Sponsorship", hi: "स्पॉन्सरशिप के लिए" },
+  scholarship_25k: { fee: 249, maxAward: 25000, paymentLink: "https://zohosecurepay.in/checkout/uzxpyffh-d7okgf40jw34j/Registration-Fee--for-UP-TO-25k-scholarship--Rs-625-is-Other-charges-are-applicable-to-all", en: "Scholarship up to ₹25,000", hi: "₹25,000 तक छात्रवृत्ति" },
+  scholarship_50k: { fee: 599, maxAward: 50000, paymentLink: "https://zohosecurepay.in/checkout/qbalg555-ynvcdu67k9osk/Registration-Fee--for-UP-TO-50k-scholarship--Rs-1525-is-Other-charges-are-applicable-to-all", en: "Scholarship up to ₹50,000", hi: "₹50,000 तक छात्रवृत्ति" },
 } as const;
 export type ApplicationType = keyof typeof applicationTypes;
 export const applicationTypeKeys = Object.keys(applicationTypes) as ApplicationType[];
@@ -167,7 +167,7 @@ export type EducationLookup = z.infer<typeof educationLookupSchema>;
 
 export const paymentReferenceSchema = z.object({
   verify: educationLookupSchema,
-  reference: z.string().trim().regex(/^[A-Za-z0-9_-]{6,60}$/, "Enter the payment ID from your Razorpay receipt (e.g. pay_XXXXXXXX)."),
+  reference: z.string().trim().regex(/^[A-Za-z0-9_-]{6,60}$/, "Enter the payment ID from your payment receipt (letters, numbers, - or _)."),
 });
 
 export const educationReviewSchema = z.object({
