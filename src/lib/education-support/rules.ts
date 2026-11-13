@@ -157,17 +157,16 @@ export const educationPrivateSchema = educationSupportBase.pick(privateMask).sup
 });
 export type EducationPrivateValues = z.infer<typeof educationPrivateSchema>;
 
-/** What a student enters to open their registration for editing. */
+/** What a student enters to reopen their registration: acknowledgement number, date of birth and state must all match. */
 export const educationLookupSchema = z.object({
   ackNumber: z.string().trim().toUpperCase().regex(ackNumberPattern, "Enter your acknowledgement number exactly as shown on your receipt."),
-  mobile,
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the date of birth."),
+  state: oneOf(indianStates, "Select the state."),
 });
 export type EducationLookup = z.infer<typeof educationLookupSchema>;
 
 export const paymentReferenceSchema = z.object({
-  ackNumber: z.string().trim().regex(ackNumberPattern, "Invalid acknowledgement number."),
-  receiptToken: z.string().regex(/^[a-f0-9]{64}$/),
+  verify: educationLookupSchema,
   reference: z.string().trim().regex(/^[A-Za-z0-9_-]{6,60}$/, "Enter the payment ID from your Razorpay receipt (e.g. pay_XXXXXXXX)."),
 });
 
@@ -189,3 +188,33 @@ export const stepFields: string[][] = [
   ["confirmAccurate", "agreeTerms", "consentVerification", "authorizeContact", "understandFees"],
   ["bankHolder", "bankName", "bankAccount", "bankAccountConfirm", "bankIfsc", "aadhaarNumber", "kycConsent"],
 ];
+
+/** Step 1 fields: submitting them issues the acknowledgement number. */
+export const basicFieldKeys = ["studentName", "dateOfBirth", "mobile", "email", "state", "district", "studentCategory", "applicationType"] as const;
+export const educationBasicSchema = educationSupportBase.pick({ studentName: true, dateOfBirth: true, mobile: true, email: true, state: true, district: true, studentCategory: true, applicationType: true })
+  .extend({ coordinatorCode: z.string().trim().max(40).regex(/^[A-Za-z0-9-]*$/).default("") })
+  .superRefine((v, ctx) => {
+    const age = ageOn(v.dateOfBirth);
+    if (!(age >= 6 && age <= 60)) ctx.addIssue({ code: "custom", path: ["dateOfBirth"], message: "Please check the date of birth." });
+  });
+export type EducationBasicValues = z.infer<typeof educationBasicSchema>;
+
+/** Form steps in order. Step 1 = basic details (issues the acknowledgement number), step 2 = payment, then the remaining details. */
+export const eduStepFields = {
+  basic: [...basicFieldKeys] as string[],
+  payment: [] as string[],
+  education: ["currentClass", "schoolName", "schoolType", "schoolBoard", "schoolAddress", "schoolCity", "schoolState", "schoolPin", "courseName", "courseSpecialization", "collegeName", "enrollmentNumber", "currentYear", "currentSemester", "studyMode", "collegeState", "collegeCity", "educationSector", "academicSession"],
+  personal: ["fatherName", "motherName", "gender", "nationality", "whatsapp", "permanentAddress", "currentAddress", "city", "pinCode"],
+  guardian: ["guardianName", "guardianMobile", "guardianEmail", "guardianRelationship", "guardianConsent"],
+  coordinator: ["withoutCoordinator", "coordinatorName", "coordinatorMobile", "coordinatorWhatsapp", "coordinatorEmail", "coordinatorType", "coordinatorInstitution", "coordinatorIdText", "coordinatorCode"],
+  bank: ["bankHolder", "bankName", "bankAccount", "bankAccountConfirm", "bankIfsc", "aadhaarNumber", "kycConsent"],
+  declaration: ["confirmAccurate", "agreeTerms", "consentVerification", "authorizeContact", "understandFees"],
+  review: [] as string[],
+};
+export type EduStepKey = keyof typeof eduStepFields;
+/** Step keys shown for this student; guardian details only for students under 18. */
+export function eduStepKeys(minor: boolean): EduStepKey[] {
+  return ["basic", "payment", "education", "personal", ...(minor ? ["guardian" as const] : []), "coordinator", "bank", "declaration", "review"];
+}
+/** Index of "step 3" — where a reopened registration starts. */
+export const firstDetailsStep = 2;
