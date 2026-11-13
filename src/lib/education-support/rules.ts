@@ -141,8 +141,32 @@ export function stepErrors(values: Record<string, unknown>, fields: string[]): R
 
 export type EducationSupportInput = z.input<typeof educationSupportSchema>;
 
+/** Database numbers (15 digits), earlier SCH- references and Google Sheet backup numbers (B + 15 digits). */
+export const ackNumberPattern = /^(\d{15}|SCH-\d{4}-\d{8}|B\d{15})$/;
+
+export const privateFieldKeys = ["bankHolder", "bankName", "bankAccount", "bankAccountConfirm", "bankIfsc", "aadhaarNumber", "kycConsent"] as const;
+const privateMask = { bankHolder: true, bankName: true, bankAccount: true, bankAccountConfirm: true, bankIfsc: true, aadhaarNumber: true, kycConsent: true } as const;
+
+/** Everything except bank and Aadhaar details; used when editing without changing them. */
+export const educationCoreSchema = educationSupportBase.omit(privateMask).superRefine((v, ctx) => {
+  for (const i of conditionalIssues(v)) ctx.addIssue({ code: "custom", path: [i.path], message: i.message });
+});
+export type EducationCoreValues = z.infer<typeof educationCoreSchema>;
+export const educationPrivateSchema = educationSupportBase.pick(privateMask).superRefine((v, ctx) => {
+  if (v.bankAccount !== v.bankAccountConfirm) ctx.addIssue({ code: "custom", path: ["bankAccountConfirm"], message: "Bank account numbers do not match." });
+});
+export type EducationPrivateValues = z.infer<typeof educationPrivateSchema>;
+
+/** What a student enters to open their registration for editing. */
+export const educationLookupSchema = z.object({
+  ackNumber: z.string().trim().toUpperCase().regex(ackNumberPattern, "Enter your acknowledgement number exactly as shown on your receipt."),
+  mobile,
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the date of birth."),
+});
+export type EducationLookup = z.infer<typeof educationLookupSchema>;
+
 export const paymentReferenceSchema = z.object({
-  ackNumber: z.string().trim().regex(/^(\d{15}|SCH-\d{4}-\d{8})$/, "Invalid acknowledgement number."),
+  ackNumber: z.string().trim().regex(ackNumberPattern, "Invalid acknowledgement number."),
   receiptToken: z.string().regex(/^[a-f0-9]{64}$/),
   reference: z.string().trim().regex(/^[A-Za-z0-9_-]{6,60}$/, "Enter the payment ID from your Razorpay receipt (e.g. pay_XXXXXXXX)."),
 });
