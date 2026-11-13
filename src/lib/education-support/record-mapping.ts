@@ -9,9 +9,9 @@ export type DbRegistrationRow = {
   mobile: string; whatsapp: string | null; email: string; permanent_address: string; current_address: string; state: string; district: string; city: string; pin_code: string;
   guardian_name: string | null; guardian_mobile: string | null; guardian_email: string | null; guardian_relationship: string | null; guardian_consent_at: string | null;
   without_coordinator: boolean; coordinator: unknown; coordinator_code: string | null; application_type: string; registration_fee: number;
-  payment_status: string; payment_reference: string | null; receipt_token_hash: string; private_details_ciphertext: string | null; aadhaar_last_four: string | null;
+  payment_status: string; payment_reference: string | null; receipt_token_hash: string; form_status: string; private_details_ciphertext: string | null; aadhaar_last_four: string | null;
 };
-export const dbRegistrationColumns = "ack_number, created_at, student_category, education, education_sector, student_name, father_name, mother_name, date_of_birth, gender, nationality, mobile, whatsapp, email, permanent_address, current_address, state, district, city, pin_code, guardian_name, guardian_mobile, guardian_email, guardian_relationship, guardian_consent_at, without_coordinator, coordinator, coordinator_code, application_type, registration_fee, payment_status, payment_reference, receipt_token_hash, private_details_ciphertext, aadhaar_last_four";
+export const dbRegistrationColumns = "ack_number, created_at, student_category, education, education_sector, student_name, father_name, mother_name, date_of_birth, gender, nationality, mobile, whatsapp, email, permanent_address, current_address, state, district, city, pin_code, guardian_name, guardian_mobile, guardian_email, guardian_relationship, guardian_consent_at, without_coordinator, coordinator, coordinator_code, application_type, registration_fee, payment_status, payment_reference, receipt_token_hash, form_status, private_details_ciphertext, aadhaar_last_four";
 
 const str = (v: unknown) => (v === null || v === undefined ? "" : String(v));
 
@@ -71,6 +71,7 @@ export function buildSheetRecord(values: Partial<Record<FormFieldKey, string | b
 export function dbRowToSheetRecord(row: DbRegistrationRow, extra: { bankLast4?: string; editedAt?: Date; editedBy?: string } = {}): SheetRecord {
   return buildSheetRecord(dbRowToValues(row), {
     ackNumber: row.ack_number, submittedAt: istTimestamp(new Date(row.created_at)), savedInDatabase: "Yes",
+    formStatus: row.form_status === "completed" ? "Completed" : "Started", declarations: row.form_status === "completed" ? "Yes" : "No",
     paymentStatus: row.payment_status, paymentReference: str(row.payment_reference), fee: String(row.registration_fee),
     aadhaarLast4: str(row.aadhaar_last_four), bankLast4: extra.bankLast4 ?? "", privateCiphertext: str(row.private_details_ciphertext), receiptHash: row.receipt_token_hash,
     ...(extra.editedAt ? { editedAt: istTimestamp(extra.editedAt), editedBy: extra.editedBy ?? "" } : {}),

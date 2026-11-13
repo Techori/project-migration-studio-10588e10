@@ -1,13 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { educationCoreSchema, educationLookupSchema, educationPrivateSchema, educationReviewSchema, educationSupportSchema, paymentReferenceSchema, paymentStatuses, studentCategories, applicationTypeKeys, type ApplicationType } from "./education-support/rules";
+import { educationBasicSchema, educationCoreSchema, educationLookupSchema, educationPrivateSchema, educationReviewSchema, paymentReferenceSchema, paymentStatuses, studentCategories, applicationTypeKeys, type ApplicationType } from "./education-support/rules";
 
-export const submitEducationSupport = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => educationSupportSchema.parse(input))
+/** Step 1: basic details → acknowledgement number. */
+export const startEducationRegistration = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => educationBasicSchema.parse(input))
   .handler(async ({ data }) => {
-    const { saveNewRegistration } = await import("./education-support/registration-store.server");
-    return saveNewRegistration(data);
+    const { startRegistration } = await import("./education-support/registration-store.server");
+    return startRegistration(data);
+  });
+
+/** Coordinator details for a referral link code (shown read-only in the form). */
+export const getReferralCoordinator = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ code: z.string().trim().max(40).regex(/^[A-Za-z0-9-]+$/) }).parse(input))
+  .handler(async ({ data }) => {
+    const { limitSubmission } = await import("./submissions.server");
+    await limitSubmission(`ref:${data.code.toUpperCase()}`, { failOpen: true });
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { referralCoordinator } = await import("./education-support/registration-store.server");
+      return await referralCoordinator(supabaseAdmin, data.code);
+    } catch (e) { console.error("Referral lookup failed", e); return null; }
   });
 
 export const submitEducationPaymentReference = createServerFn({ method: "POST" })
@@ -24,7 +38,7 @@ function parseEditValues(input: z.infer<typeof editValuesSchema>) {
   return { core, priv };
 }
 
-/** Student opens their registration with acknowledgement number, mobile and date of birth (database first, then the Google Sheet). */
+/** Student reopens their registration with acknowledgement number, date of birth and state (database first, then the Google Sheet). */
 export const lookupEducationRegistration = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => educationLookupSchema.parse(input))
   .handler(async ({ data }) => {
@@ -32,12 +46,20 @@ export const lookupEducationRegistration = createServerFn({ method: "POST" })
     return lookupForEdit(data);
   });
 
-export const updateEducationRegistration = createServerFn({ method: "POST" })
+export const saveEducationProgress = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ verify: educationLookupSchema, values: z.record(z.union([z.string().max(300), z.boolean()])) }).parse(input))
+  .handler(async ({ data }) => {
+    const { saveProgress } = await import("./education-support/registration-store.server");
+    return saveProgress(data.verify, data.values);
+  });
+
+/** Final submission, and later edits until payment is confirmed. */
+export const submitEducationRegistration = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => editValuesSchema.extend({ verify: educationLookupSchema }).parse(input))
   .handler(async ({ data }) => {
     const { core, priv } = parseEditValues(data);
-    const { updateFromStudent } = await import("./education-support/registration-store.server");
-    return updateFromStudent(data.verify, core, priv);
+    const { saveFullRegistration } = await import("./education-support/registration-store.server");
+    return saveFullRegistration(data.verify, core, priv);
   });
 
 export const getEducationRegistrationForEdit = createServerFn({ method: "POST" })

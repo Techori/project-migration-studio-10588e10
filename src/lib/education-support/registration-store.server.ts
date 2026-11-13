@@ -290,21 +290,27 @@ export async function syncWithSheet() {
     seen.add(ack);
     if (dbAcks.has(ack)) { if (s.record.meta.savedInDatabase !== "Yes") marked.push({ ...s, record: { ...s.record, meta: { ...s.record.meta, savedInDatabase: "Yes" } } }); continue; }
     if (!isBackupAck(ack)) { skipped.push({ ackNumber: ack, reason: "Not a backup number and not found in the database." }); continue; }
-    const parsed = educationCoreSchema.safeParse({ ...s.record.values, confirmAccurate: true, agreeTerms: true, consentVerification: true, authorizeContact: true, understandFees: true });
+    const completed = /^completed$/i.test(s.record.meta.formStatus);
+    const parsed = completed
+      ? educationCoreSchema.safeParse({ ...s.record.values, confirmAccurate: true, agreeTerms: true, consentVerification: true, authorizeContact: true, understandFees: true })
+      : educationBasicSchema.safeParse({ ...s.record.values, coordinatorCode: String(s.record.values.coordinatorCode ?? "") });
     if (!parsed.success) { skipped.push({ ackNumber: ack, reason: parsed.error.issues[0]?.message ?? "Invalid details in the sheet." }); continue; }
     if (!s.record.meta.receiptHash || !/^[a-f0-9]{64}$/.test(s.record.meta.receiptHash)) { skipped.push({ ackNumber: ack, reason: "Receipt check column is missing or was changed." }); continue; }
     const createdAt = new Date(s.record.meta.submittedAt);
     const created = Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
     const pay = ["pending", "reference_submitted"].includes(s.record.meta.paymentStatus) ? s.record.meta.paymentStatus : "pending";
+    const values = completed ? parsed.data as EducationCoreValues : withBlanks(s.record.values) as unknown as EducationCoreValues;
+    const columns = valuesToDbColumns(values, created);
     const { data: inserted, error } = await db.from("education_support_registrations").insert({
-      ...valuesToDbColumns(parsed.data, created), ack_number: ack, created_at: created.toISOString(),
-      coordinator_id: await coordinatorIdFor(db, parsed.data), receipt_token_hash: s.record.meta.receiptHash,
+      ...columns, ...(completed ? { completed_at: created.toISOString() } : { declarations: {}, guardian_consent_at: null }),
+      form_status: completed ? "completed" : "started", ack_number: ack, created_at: created.toISOString(),
+      coordinator_id: await coordinatorIdFor(db, values), receipt_token_hash: s.record.meta.receiptHash,
       private_details_ciphertext: s.record.meta.privateCiphertext || null, aadhaar_last_four: s.record.meta.aadhaarLast4 || null,
       payment_status: pay, payment_reference: pay === "reference_submitted" ? s.record.meta.paymentReference || null : null,
     }).select("id").single();
     if (error || !inserted) { skipped.push({ ackNumber: ack, reason: error?.code === "23505" ? "Payment ID already used by another registration." : "The database refused this row." }); continue; }
     imported++;
-    try { const { refreshEducationChecks } = await import("./checks.server"); await refreshEducationChecks(db, inserted.id, { ai: false }); } catch (e) { console.error("Checks after sheet import failed", e); }
+    if (completed) try { const { refreshEducationChecks } = await import("./checks.server"); await refreshEducationChecks(db, inserted.id, { ai: false }); } catch (e) { console.error("Checks after sheet import failed", e); }
     marked.push({ ...s, record: { ...s.record, meta: { ...s.record.meta, savedInDatabase: "Yes" } } });
   }
   await writeSheetRows(marked);
