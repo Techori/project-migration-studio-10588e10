@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Move the project into this Lovable project: pages, images, backend tables, storage and AI features rebuilt; contact form and AI ideas verified
+- [ ] Import existing records and users: waiting on exports from the old project
+- [ ] First admin: sign up at /admin, confirm email, claim admin; then verify admin, CRM, imports and file restore
+
 - [x] Optimize current Young Innovators images without changing artwork; saved 382,522 bytes across responsive variants.
 - [x] Add a removable third glowing Diwali theme through the existing switch; theme cycle, persistence, unchanged text and desktop/mobile image loading verified.
 
