@@ -625,7 +625,7 @@ export type Database = {
         }
         Insert: {
           aadhaar_last_four?: string | null
-          ack_number: string
+          ack_number?: string
           ai_review?: string
           application_type: string
           approval_status?: string
