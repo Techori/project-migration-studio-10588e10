@@ -6,7 +6,7 @@
 - [ ] Referral links per employee: coordinator details auto-filled; employee dashboard shows and verifies their referred registrations
 - [ ] Fix all current errors
 - [ ] Allow sign-in, admin and CRM on https://www.riloyd.in (auth redirect allowlist); domain itself must be connected to the project
-- [ ] CRM admin AI helper: paste an enquiry message, get lead category, urgency and a drafted reply (AI Gateway)
+- [x] CRM admin AI helper: paste an enquiry message, get lead category, urgency and a drafted reply (AI Gateway) — live AI answer checked
 - [x] Checked sample registrations, CRM leads and Vercel secret: none exist in this project; numbering already starts at 00001
 - [ ] Replace the three Razorpay payment links with Razorpay embed codes: waiting on the three embed codes from the user
 - [x] Move the project into this Lovable project: pages, images, backend tables, storage and AI features rebuilt; contact form and AI ideas verified
