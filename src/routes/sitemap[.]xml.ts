@@ -5,7 +5,7 @@ import { getRouterInstance } from "@tanstack/react-start";
 import { sitemapStaticPaths, sitemapXML, type SitemapEntry } from "@/lib/sitemap";
 
 // TODO: If empty, configure the public site origin before publishing.
-const BASE_URL = "https://riloyd-project-migration-studio.lovable.app";
+const BASE_URL = "https://www.riloyd.in";
 
 export const Route = createFileRoute("/sitemap.xml")({
   staticData: { sitemap: false },

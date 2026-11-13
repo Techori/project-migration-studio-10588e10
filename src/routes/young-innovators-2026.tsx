@@ -26,7 +26,7 @@ const ProjectIdeas = lazy(() => import("@/components/student-project-ideas").the
 
 const title = "Young Innovators Challenge 2026 | Riloyd India";
 const description = "Join Riloyd Young Innovators Challenge 2026 for Classes 6–12 in India. Explore startup ideas, AI project guidance, fees, rewards and guardian-consented registration.";
-const pageUrl = "https://riloyd-project-migration-studio.lovable.app/young-innovators-2026";
+const pageUrl = "https://www.riloyd.in/young-innovators-2026";
 
 export const Route = createFileRoute("/young-innovators-2026")({
   staticData: { sitemap: true },
