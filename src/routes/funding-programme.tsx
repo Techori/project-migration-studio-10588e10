@@ -41,6 +41,7 @@ import gatheringVideo from "@/assets/videos/funding-gathering-autoplay.mp4.asset
 import gatheringVideoWebm from "@/assets/videos/funding-gathering-autoplay.webm.asset.json";
 import { ViewportVideo } from "@/components/viewport-video";
 import { RegistrationCountdown } from "@/components/registration-countdown";
+import { PaymentOptionButton } from "@/components/payment-option-button";
 
 const ZOHOPUBLIC = "https://forms.zohopublic.in/RIPLSTORES/form/StartupIdeaRegistrationForm/formperma/1SNzTjiKwSF14T0BCEyJLvZCZDDowZl3NYWbAjpy1KE";
 
@@ -313,6 +314,7 @@ function FundingProgramme() {
             <p className="border-b border-border bg-primary px-5 py-3 text-xs font-extrabold uppercase tracking-wider text-primary-foreground">Registration Fee</p>
             <div className="flex flex-1 flex-col gap-3 p-4">
               {indiaRegistrationOptions.map(option => <div key={option.amount} className="flex items-center gap-4 rounded-md bg-primary/15 px-4 py-4"><UsersRound className="shrink-0 text-primary" size={26} /><div><p className="text-3xl font-black">₹{option.amount.toLocaleString("en-IN")}/-</p><p className="text-xs text-muted-foreground">+{option.gstPercent}% GST ·</p></div></div>)}
+              <PaymentOptionButton optionKey="funding_programme_registration" label="Pay registration fee" />
               <div className="mt-auto rounded-md border border-primary/40 bg-primary/10 px-4 py-3 text-xs"><b>50% refund</b> if not selected in screening. T&amp;C applicable.</div>
             </div>
           </div>
@@ -331,6 +333,7 @@ function FundingProgramme() {
                 ))}
               </div>
               <div className="mt-auto rounded-md bg-primary/15 px-4 py-2.5 text-center"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stay · Food · Local travel · Local tour</p><p className="text-2xl font-black">₹{summitParticipation.amount.toLocaleString("en-IN")}/-</p><p className="text-xs font-semibold">Per participant · Optional</p></div>
+              <PaymentOptionButton optionKey="funding_programme_summit" label="Pay summit package" />
               <p className="text-[10px] text-muted-foreground">Subject to policy, eligibility and Terms and Conditions.</p>
             </div>
           </div>
