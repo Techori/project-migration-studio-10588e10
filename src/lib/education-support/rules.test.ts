@@ -20,9 +20,9 @@ describe("Education Support fees and links", () => {
   it("charges ₹249 for scholarship up to ₹25,000", () => expect(registrationFee("scholarship_25k")).toBe(249));
   it("charges ₹599 for scholarship up to ₹50,000", () => expect(registrationFee("scholarship_50k")).toBe(599));
   it("uses the supplied Razorpay link for each fee", () => {
-    expect(applicationTypes.sponsorship.paymentLink).toBe("https://rzp.io/rzp/Qxq0Jnp");
-    expect(applicationTypes.scholarship_25k.paymentLink).toBe("https://rzp.io/rzp/IO7EI7Q");
-    expect(applicationTypes.scholarship_50k.paymentLink).toBe("https://rzp.io/rzp/6NAOBYdt");
+    expect(applicationTypes.sponsorship.paymentLink).toBe("https://zohosecurepay.in/checkout/ue370226-iwkpgy8mqbvm2/Registration-Fee-Payment-for-education-sponsorship");
+    expect(applicationTypes.scholarship_25k.paymentLink).toBe("https://zohosecurepay.in/checkout/uzxpyffh-d7okgf40jw34j/Registration-Fee--for-UP-TO-25k-scholarship--Rs-625-is-Other-charges-are-applicable-to-all");
+    expect(applicationTypes.scholarship_50k.paymentLink).toBe("https://zohosecurepay.in/checkout/qbalg555-ynvcdu67k9osk/Registration-Fee--for-UP-TO-50k-scholarship--Rs-1525-is-Other-charges-are-applicable-to-all");
   });
 });
 

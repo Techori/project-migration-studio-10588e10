@@ -119,7 +119,7 @@ export async function savePaymentReference(data: { verify: EducationLookup; refe
     const { data: rows, error } = await db.from("education_support_registrations")
       .update({ payment_reference: data.reference, payment_reference_at: new Date().toISOString(), payment_status: "reference_submitted" })
       .eq("id", found.row.id).in("payment_status", ["pending", "reference_submitted"]).select(`id, ${dbRegistrationColumns}`);
-    if (error?.code === "23505") throw new VisitorError("This transaction ID has already been used for another registration. Each payment ID can be used only once — please check your Razorpay receipt.");
+    if (error?.code === "23505") throw new VisitorError("This transaction ID has already been used for another registration. Each payment ID can be used only once — please check your payment receipt.");
     if (error) throw new Error("The payment ID could not be saved. Please try again.");
     const row = rows?.[0] as Row | undefined;
     if (!row) throw bad;
