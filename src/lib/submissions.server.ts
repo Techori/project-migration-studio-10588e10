@@ -1,14 +1,15 @@
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export async function limitSubmission(email: string) {
+/** With `failOpen`, an unavailable database does not block the visitor (used where a Google Sheet backup exists). */
+export async function limitSubmission(email: string, opts: { failOpen?: boolean } = {}) {
   const ip = getRequestHeader("cf-connecting-ip");
   // The hosting edge sets this header; do not trust arbitrary forwarded headers.
   for (const value of [email.trim().toLowerCase(), ...(ip ? [ip] : [])]) {
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
     const key = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
     const { data, error } = await supabaseAdmin.rpc("consume_form_submission_limit", { _key_hash: key });
-    if (error) throw new Error("Submissions are unavailable right now. Please try again.");
+    if (error) { if (opts.failOpen) { console.error("Submission limiter unavailable", error); return; } throw new Error("Submissions are unavailable right now. Please try again."); }
     if (!data) throw new Error("Too many submissions. Please try again after 15 minutes.");
   }
 }

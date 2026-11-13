@@ -1,88 +1,74 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { applicationTypes, educationReviewSchema, educationSupportSchema, isMinor, paymentReferenceSchema, paymentStatuses, studentCategories, applicationTypeKeys, type ApplicationType } from "./education-support/rules";
-
-async function sha256Hex(value: string) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
-}
+import { educationCoreSchema, educationLookupSchema, educationPrivateSchema, educationReviewSchema, educationSupportSchema, paymentReferenceSchema, paymentStatuses, studentCategories, applicationTypeKeys, type ApplicationType } from "./education-support/rules";
 
 export const submitEducationSupport = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => educationSupportSchema.parse(input))
-  .handler(async ({ data: v }) => {
-    const { limitSubmission } = await import("./submissions.server");
-    await limitSubmission(v.email);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const code = v.withoutCoordinator ? "" : v.coordinatorCode.toUpperCase();
-    let coordinatorId: string | null = null;
-    if (code) {
-      const { data: c } = await supabaseAdmin.from("coordinators").select("id").eq("referral_code", code).eq("active", true).maybeSingle();
-      coordinatorId = c?.id ?? null;
-    }
-    const minor = isMinor(v.dateOfBirth);
-    const school = v.studentCategory === "school";
-    const education = school
-      ? { currentClass: v.currentClass, schoolName: v.schoolName, schoolType: v.schoolType, schoolBoard: v.schoolBoard, schoolAddress: v.schoolAddress, schoolCity: v.schoolCity, schoolState: v.schoolState, schoolPin: v.schoolPin, academicSession: v.academicSession }
-      : { courseName: v.courseName, courseSpecialization: v.courseSpecialization, collegeName: v.collegeName, enrollmentNumber: v.enrollmentNumber, currentYear: v.currentYear, currentSemester: v.currentSemester, studyMode: v.studyMode, collegeState: v.collegeState, collegeCity: v.collegeCity, academicSession: v.academicSession };
-    const receiptToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, "0")).join("");
-    const fee = applicationTypes[v.applicationType].fee;
-    const secret = process.env['EDUCATION_KYC_ENCRYPTION_KEY'];
-    if (!secret) throw new Error('Secure identity storage is unavailable. Please contact the Foundation team.');
-    const { encryptDetails } = await import('./education-support/privacy.server');
-    const privateDetails = await encryptDetails({ bankHolder: v.bankHolder, bankName: v.bankName, bankAccount: v.bankAccount, bankIfsc: v.bankIfsc, aadhaarNumber: v.aadhaarNumber }, secret);
-    const { ruleFlagsFor } = await import("./education-support/checks.server");
-    const checkedAt = new Date().toISOString();
-    const { flags: reviewFlags } = await ruleFlagsFor(supabaseAdmin, {
-      student_name: v.studentName, father_name: v.fatherName, mother_name: v.motherName, guardian_name: v.guardianName || null,
-      student_category: v.studentCategory, current_class: school ? v.currentClass : null, course_name: school ? null : v.courseName, date_of_birth: v.dateOfBirth, created_at: checkedAt,
-      application_type: v.applicationType, registration_fee: fee, payment_status: "pending", payment_reference: null,
-      without_coordinator: v.withoutCoordinator, coordinator_code: code || null, coordinator: { name: v.coordinatorName },
-    }, v.bankHolder);
-    const { data: row, error } = await supabaseAdmin.from("education_support_registrations").insert({
-      review_flags: reviewFlags, flags_checked_at: checkedAt,
-      student_category: v.studentCategory,
-      current_class: school ? v.currentClass : null,
-      course_name: school ? null : v.courseName,
-      education_sector: v.educationSector || null,
-      institution_name: school ? v.schoolName : v.collegeName,
-      education,
-      student_name: v.studentName, father_name: v.fatherName, mother_name: v.motherName, date_of_birth: v.dateOfBirth,
-      gender: v.gender, nationality: v.nationality, mobile: v.mobile, whatsapp: v.whatsapp || null, email: v.email,
-      permanent_address: v.permanentAddress, current_address: v.currentAddress, state: v.state, district: v.district, city: v.city, pin_code: v.pinCode,
-      is_minor: minor,
-      guardian_name: v.guardianName || null, guardian_mobile: v.guardianMobile || null, guardian_email: v.guardianEmail || null, guardian_relationship: v.guardianRelationship || null,
-      guardian_consent_at: minor && v.guardianConsent ? new Date().toISOString() : null,
-      without_coordinator: v.withoutCoordinator,
-      coordinator: v.withoutCoordinator ? {} : { name: v.coordinatorName, mobile: v.coordinatorMobile, whatsapp: v.coordinatorWhatsapp, email: v.coordinatorEmail, type: v.coordinatorType, institution: v.coordinatorInstitution, coordinatorId: v.coordinatorIdText },
-      coordinator_code: code || null, coordinator_id: coordinatorId,
-      application_type: v.applicationType, registration_fee: fee,
-      receipt_token_hash: await sha256Hex(receiptToken),
-      private_details_ciphertext: privateDetails, aadhaar_last_four: v.aadhaarNumber.slice(-4),
-      declarations: { confirmAccurate: true, agreeTerms: true, consentVerification: true, authorizeContact: true, understandFees: true, kycConsent: true, guardianConsent: minor ? v.guardianConsent : null, at: new Date().toISOString() },
-    }).select("ack_number, created_at").single();
-    if (error || !row) throw new Error("Your registration could not be saved. Please try again.");
-    return { ackNumber: row.ack_number, createdAt: row.created_at, receiptToken, fee, applicationType: v.applicationType as ApplicationType, coordinatorName: v.withoutCoordinator ? "" : v.coordinatorName };
+  .handler(async ({ data }) => {
+    const { saveNewRegistration } = await import("./education-support/registration-store.server");
+    return saveNewRegistration(data);
   });
 
 export const submitEducationPaymentReference = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => paymentReferenceSchema.parse(input))
   .handler(async ({ data }) => {
-    const { limitSubmission } = await import("./submissions.server");
-    await limitSubmission(data.ackNumber);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin.from("education_support_registrations")
-      .update({ payment_reference: data.reference, payment_reference_at: new Date().toISOString(), payment_status: "reference_submitted" })
-      .eq("ack_number", data.ackNumber).eq("receipt_token_hash", await sha256Hex(data.receiptToken)).in("payment_status", ["pending", "reference_submitted"])
-      .select("id, ack_number");
-    if (error?.code === "23505") throw new Error("This transaction ID has already been used for another registration. Each payment ID can be used only once — please check your Razorpay receipt.");
-    if (error) throw new Error("The payment ID could not be saved. Please try again.");
-    if (!rows?.length) throw new Error("This registration could not be updated. Please contact the Foundation team with your acknowledgement number.");
-    try {
-      const { refreshEducationChecks } = await import("./education-support/checks.server");
-      await refreshEducationChecks(supabaseAdmin, rows[0]!.id, { ai: false });
-    } catch (e) { console.error("Education checks after payment ID failed", e); }
-    return { ok: true };
+    const { savePaymentReference } = await import("./education-support/registration-store.server");
+    return savePaymentReference(data);
+  });
+
+const editValuesSchema = z.object({ changePrivateDetails: z.boolean(), values: z.record(z.unknown()) });
+function parseEditValues(input: z.infer<typeof editValuesSchema>) {
+  const core = educationCoreSchema.parse(input.values);
+  const priv = input.changePrivateDetails ? educationPrivateSchema.parse(input.values) : null;
+  return { core, priv };
+}
+
+/** Student opens their registration with acknowledgement number, mobile and date of birth (database first, then the Google Sheet). */
+export const lookupEducationRegistration = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => educationLookupSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { lookupForEdit } = await import("./education-support/registration-store.server");
+    return lookupForEdit(data);
+  });
+
+export const updateEducationRegistration = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => editValuesSchema.extend({ verify: educationLookupSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const { core, priv } = parseEditValues(data);
+    const { updateFromStudent } = await import("./education-support/registration-store.server");
+    return updateFromStudent(data.verify, core, priv);
+  });
+
+export const getEducationRegistrationForEdit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: admin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!admin) throw new Error("Admin access required.");
+    const { getForAdmin } = await import("./education-support/registration-store.server");
+    return getForAdmin(context.supabase, data.id);
+  });
+
+export const adminUpdateEducationRegistration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => editValuesSchema.extend({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: admin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!admin) throw new Error("Admin access required.");
+    const { core, priv } = parseEditValues(data);
+    const { updateFromAdmin } = await import("./education-support/registration-store.server");
+    return updateFromAdmin(context.supabase, data.id, core, priv);
+  });
+
+/** Imports backup-only sheet rows into the database and copies database rows missing from the sheet. */
+export const syncEducationSheet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: admin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!admin) throw new Error("Admin access required.");
+    const { syncWithSheet } = await import("./education-support/registration-store.server");
+    return syncWithSheet();
   });
 
 const listSchema = z.object({
