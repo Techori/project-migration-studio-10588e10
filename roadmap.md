@@ -1,14 +1,14 @@
 # Roadmap
 
-- [ ] Scholarship form: Google Sheet backup with acknowledgement numbers, student/admin editing that can also read from the sheet
-- [ ] Scholarship form new flow: step 1 basic details -> acknowledgement number; step 2 payment; step 3+ rest of form; reopen with acknowledgement no. + date of birth + state; final submission when all steps done
-- [ ] Admin can change payment links for every form that takes payment
-- [ ] Referral links per employee: coordinator details auto-filled; employee dashboard shows and verifies their referred registrations
-- [ ] Fix all current errors
+- [x] Scholarship form: Google Sheet backup with acknowledgement numbers, student/admin editing that can also read from the sheet
+- [x] Scholarship form new flow: step 1 basic details -> acknowledgement number; step 2 payment; step 3+ rest of form; reopen with acknowledgement no. + date of birth + state; final submission when all steps done
+- [x] Admin can change payment links (Admin → Payment links: link + Razorpay button ID or embed code) for every form that takes payment
+- [x] Referral links per employee: coordinator details auto-filled; employee dashboard shows and verifies their referred registrations
+- [x] Fix all current errors (sheet column growth, old address in sitemap/robots, all tests pass)
 - [ ] Sign-in on https://www.riloyd.in: website code already returns users to whatever address they use, sitemap/robots point to www.riloyd.in; waiting on the owner to connect the domain (adds it to the sign-in allow list automatically) or add https://www.riloyd.in/** and https://riloyd.in/** under Users → Auth settings → Redirect URLs
 - [x] CRM admin AI helper: paste an enquiry message, get lead category, urgency and a drafted reply (AI Gateway) — live AI answer checked
 - [x] Checked sample registrations, CRM leads and Vercel secret: none exist in this project; numbering already starts at 00001
-- [ ] Replace the three Razorpay payment links with Razorpay embed codes: waiting on the three embed codes from the user
+- [ ] Replace the three Razorpay payment links with Razorpay embed codes: admins can now paste each embed code in Admin → Payment links; waiting on the three codes
 - [x] Move the project into this Lovable project: pages, images, backend tables, storage and AI features rebuilt; contact form and AI ideas verified
 - [ ] Import existing records and users: waiting on exports from the old project
 - [ ] First admin: sign up at /admin, confirm email, claim admin; then verify admin, CRM, imports and file restore
@@ -191,7 +191,7 @@
 
 ## Registration checks, staff access, hosting (13 Nov 2026, later)
 - [ ] Flag name / class / payment / coordinator-code mismatches on Education Support registrations (rules + AI review), show flags in admin tab, require a person to confirm before approval
-- [ ] Re-check acknowledgement number format YYMMDD + state 2 + district 2 + series 00001–99999
+- [x] Re-check acknowledgement number format YYMMDD + state 2 + district 2 + series 00001–99999
 - [ ] Complete BDE / BDM / Support login and role access (BDE own leads, BDM team, admin all) and verify each role
-- [ ] Payment transaction ID must be unique across all registrations (never repeat)
+- [x] Payment transaction ID must be unique across all registrations (never repeat)
 - [x] Hosting: user decided not to split; whole project stays on Lovable (Vercel forwarding stays switched off)
