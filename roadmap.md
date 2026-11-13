@@ -8,7 +8,7 @@
 - [ ] Sign-in on https://www.riloyd.in: website code already returns users to whatever address they use, sitemap/robots point to www.riloyd.in; waiting on the owner to connect the domain (adds it to the sign-in allow list automatically) or add https://www.riloyd.in/** and https://riloyd.in/** under Users → Auth settings → Redirect URLs
 - [x] CRM admin AI helper: paste an enquiry message, get lead category, urgency and a drafted reply (AI Gateway) — live AI answer checked
 - [x] Checked sample registrations, CRM leads and Vercel secret: none exist in this project; numbering already starts at 00001
-- [ ] Replace the three Razorpay payment links with Razorpay embed codes: admins can now paste each embed code in Admin → Payment links; waiting on the three codes
+- [ ] Scholarship fees (₹149/₹249/₹599) use Zoho payment instead of Razorpay; payment ID auto-filled in the form: waiting on which Zoho product + the three links/embed codes
 - [x] Move the project into this Lovable project: pages, images, backend tables, storage and AI features rebuilt; contact form and AI ideas verified
 - [ ] Import existing records and users: waiting on exports from the old project
 - [ ] First admin: sign up at /admin, confirm email, claim admin; then verify admin, CRM, imports and file restore
