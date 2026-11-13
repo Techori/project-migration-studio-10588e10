@@ -5,6 +5,7 @@
 - [ ] Admin can change payment links for every form that takes payment
 - [ ] Referral links per employee: coordinator details auto-filled; employee dashboard shows and verifies their referred registrations
 - [ ] Fix all current errors
+- [ ] Delete sample scholarship registrations and their CRM leads so numbering starts at 00001; remove unused Vercel secret
 - [ ] Replace the three Razorpay payment links with Razorpay embed codes: waiting on the three embed codes from the user
 - [x] Move the project into this Lovable project: pages, images, backend tables, storage and AI features rebuilt; contact form and AI ideas verified
 - [ ] Import existing records and users: waiting on exports from the old project
