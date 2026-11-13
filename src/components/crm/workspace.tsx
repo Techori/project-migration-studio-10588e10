@@ -3,7 +3,7 @@ import { AuthForm } from '../auth-form';
 import { useMutation,useQuery,useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { Link,useNavigate } from '@tanstack/react-router';
-import { LayoutDashboard,Columns3,Users,CheckSquare,Headphones,Target,UserPlus,Inbox,Plus,Search,RefreshCw,LogOut,ArrowUpRight,Phone,Download,Check } from 'lucide-react';
+import { LayoutDashboard,Columns3,Users,CheckSquare,Headphones,Target,UserPlus,Inbox,Sparkles,Plus,Search,RefreshCw,LogOut,ArrowUpRight,Phone,Download,Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog,DialogContent,DialogHeader,DialogTitle } from '../ui/dialog';
 import { getCrm,createCrmLead,moveCrmLead,saveCrmMember,crmAction,crmCustomerLookup,assignCrmLead } from '@/lib/crm.functions';
@@ -11,11 +11,12 @@ import { crmRoles,stages,stageLabels,progress,sourceLabels } from '@/lib/crm/rul
 import { supabase } from '@/integrations/supabase/client';
 import { CrmClock } from './clock';
 import { CrmPipeline } from './pipeline';
+import { CrmEnquiryAssistant } from './enquiry-assistant';
 import logo from '@/assets/local/riloyd-logo.png.optimized.nav.webp';
 
 type Data=Awaited<ReturnType<typeof getCrm>>;
-type View='overview'|'pipeline'|'contacts'|'tasks'|'support'|'targets'|'team'|'inbox';
-const nav=[{key:'overview',label:'Overview',icon:LayoutDashboard},{key:'pipeline',label:'Sales pipeline',icon:Columns3},{key:'contacts',label:'Customers',icon:Users},{key:'tasks',label:'Tasks & follow-ups',icon:CheckSquare},{key:'support',label:'Support desk',icon:Headphones},{key:'targets',label:'Targets & reports',icon:Target},{key:'team',label:'Employees',icon:UserPlus},{key:'inbox',label:'Website leads',icon:Inbox}] as const;
+type View='overview'|'pipeline'|'contacts'|'tasks'|'support'|'targets'|'team'|'inbox'|'ai';
+const nav=[{key:'overview',label:'Overview',icon:LayoutDashboard},{key:'pipeline',label:'Sales pipeline',icon:Columns3},{key:'contacts',label:'Customers',icon:Users},{key:'tasks',label:'Tasks & follow-ups',icon:CheckSquare},{key:'support',label:'Support desk',icon:Headphones},{key:'targets',label:'Targets & reports',icon:Target},{key:'team',label:'Employees',icon:UserPlus},{key:'inbox',label:'Website leads',icon:Inbox},{key:'ai',label:'AI enquiry helper',icon:Sparkles}] as const;
 const money=(n:number)=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n);
 const input='mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm';
 
@@ -45,7 +46,7 @@ export function CrmWorkspace(){
  const customer=lead?cust(lead.customer_id):null;
  const chosenMonth=month||new Date().toISOString().slice(0,7);
  const monthly=d.leads.filter(l=>l.updated_at.startsWith(chosenMonth));
- const allowedNav=nav.filter(n=>!(d.role==='support'&&['pipeline','inbox'].includes(n.key)));
+ const allowedNav=nav.filter(n=>!(d.role==='support'&&['pipeline','inbox'].includes(n.key))&&!(n.key==='ai'&&d.role!=='admin'));
  const canAssign=d.role==='admin'||d.role==='BDM';
  const websiteLeads=visibleLeads.filter(l=>l.source!=='manual');
  const unassigned=d.leads.filter(l=>l.owner_id===null).length;
@@ -84,6 +85,7 @@ export function CrmWorkspace(){
     </>}
     {view==='targets'&&<><label className="mb-6 block max-w-xs text-sm font-semibold">Report month<input type="month" className={input} value={chosenMonth} onChange={e=>setMonth(e.target.value)}/></label><DataTable headers={['Employee','Revenue','Wins','Calls','Tasks done / pending','Achievement']} rows={owners.filter(id=>!owner||id===owner).map(id=>{const t=d.targets.find(t=>t.owner_id===id&&t.month.startsWith(chosenMonth));const wins=monthly.filter(l=>l.owner_id===id&&l.stage==='won');const revenue=wins.reduce((n,l)=>n+l.amount,0);const calls=d.activities.filter(a=>a.owner_id===id&&a.kind==='call'&&a.created_at.startsWith(chosenMonth)).length;const tasks=d.tasks.filter(t=>t.owner_id===id&&t.due_date.startsWith(chosenMonth));return [name(id),`${money(revenue)} / ${t?money(t.revenue_target):'Not set'}`,`${wins.length} / ${t?.wins_target??'—'}`,`${calls} / ${t?.calls_target??'—'}`,`${tasks.filter(t=>t.status==='done').length} / ${tasks.filter(t=>t.status==='open').length}`,<div className="min-w-32"><progress className="crm-progress w-full" max={100} value={progress(revenue,t?.revenue_target??0)}/><span className="text-xs">{progress(revenue,t?.revenue_target??0)}%</span></div>];})}/><p className="mt-4 text-xs text-muted-foreground">Revenue and wins use deals moved to Won this month. Calls use logged call activities. Unset targets are not invented.</p><Button variant="outline" className="mt-5" onClick={()=>{const rows=[['Employee','Won revenue','Wins'],...owners.map(id=>[name(id),monthly.filter(l=>l.owner_id===id&&l.stage==='won').reduce((n,l)=>n+l.amount,0),monthly.filter(l=>l.owner_id===id&&l.stage==='won').length])];const csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download=`crm-report-${chosenMonth}.csv`;a.click();URL.revokeObjectURL(url);}}><Download className="size-4"/>Export report</Button></>}
     {view==='team'&&<DataTable headers={['Employee','Designation','Role','Manager','Joining date','Access']} rows={d.members.map(m=>{const p=d.profiles.find(p=>p.user_id===m.user_id);return [<div><p className="font-bold">{p?.full_name??m.user_id}</p><p className="mt-1 text-xs text-muted-foreground">{p?.employee_code}</p></div>,p?.designation??'—',m.role,m.manager_id?name(m.manager_id):'—',p?.joining_date??'—',m.active?'Active':'Inactive'];})}/>}
+    {view==='ai'&&d.role==='admin'&&<CrmEnquiryAssistant/>}
     {view==='inbox'&&<><p className="mb-4 text-sm text-muted-foreground">Every website form becomes a lead automatically. An employee code entered in the coordinator field sends it to that employee; otherwise it stays Unassigned for the admin. Bank and Aadhaar details are never copied.</p><DataTable headers={['Received','Form','Customer','Code entered','Assigned to','Stage','']} rows={websiteLeads.map(l=>[new Date(l.created_at).toLocaleString('en-IN'),sourceLabels[l.source]??l.source,<div><p className="font-semibold">{cust(l.customer_id)?.full_name??'Customer'}</p><p className="mt-1 text-xs text-muted-foreground">{cust(l.customer_id)?.acknowledgement??cust(l.customer_id)?.customer_code}</p></div>,l.referral_code?<span>{l.referral_code}{!l.owner_id&&<span className="block text-xs text-destructive">No matching employee</span>}</span>:'—',canAssign?assignSelect(l):name(l.owner_id),stageLabels[l.stage as typeof stages[number]]??l.stage,<Button variant="outline" size="sm" onClick={()=>setSelected(l.id)}>Open</Button>])}/></>}
    </div>
   </div>
