@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, ArrowRight, CheckCircle2, Download, ExternalLink, GraduationCap, School, BookOpenCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { submitEducationPaymentReference, submitEducationSupport } from "@/lib/education-support.functions";
-import { applicationTypeKeys, applicationTypes, educationSupportSchema, isMinor, stepErrors, stepFields, type ApplicationType, type StudentCategory } from "@/lib/education-support/rules";
+import { adminUpdateEducationRegistration, submitEducationPaymentReference, submitEducationSupport, updateEducationRegistration } from "@/lib/education-support.functions";
+import { applicationTypeKeys, applicationTypes, educationCoreSchema, educationPrivateSchema, educationSupportSchema, isMinor, stepErrors, stepFields, type ApplicationType, type EducationLookup, type StudentCategory } from "@/lib/education-support/rules";
 import { coordinatorTypes, coursesFor, educationSectors, genders, guardianRelationships, indianStates, pgYears, schoolBoards, schoolClasses, schoolTypes, studyModes, ugYears } from "@/lib/education-support/catalog";
 import { eduSteps, lbl, type EduLang } from "@/lib/education-support/labels";
 
@@ -21,9 +21,19 @@ const emptyValues = (): Values => {
 const inputClass = "mt-1.5 w-full rounded-lg border border-edu-navy/20 bg-edu-paper px-3 py-2.5 text-sm text-edu-ink outline-none transition focus:border-edu-royal focus:ring-2 focus:ring-edu-royal/20 aria-[invalid=true]:border-destructive";
 
 type Result = { ackNumber: string; createdAt: string; receiptToken: string; fee: number; applicationType: ApplicationType; coordinatorName: string };
+type EditSavedResult = { ackNumber: string; paymentStatus: string; fee: number; applicationType: ApplicationType };
 
-export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; initialCode?: string | undefined }) {
-  const [values, setValues] = useState<Values>(emptyValues);
+/** Editing an existing registration: by the student (verified by acknowledgement no., mobile and date of birth) or by an admin. */
+export type EducationEditMode =
+  | { kind: "student"; verify: EducationLookup; values: Values; paymentStatus: string; onCancel: () => void }
+  | { kind: "admin"; id: string; values: Values; onDone: () => void; onCancel: () => void };
+
+export function EducationSupportForm({ lang, initialCode, edit }: { lang: EduLang; initialCode?: string | undefined; edit?: EducationEditMode }) {
+  const [values, setValues] = useState<Values>(() => edit ? { ...emptyValues(), ...edit.values, changePrivateDetails: false } : emptyValues());
+  const [editSaved, setEditSaved] = useState<EditSavedResult | null>(null);
+  const studentUpdate = useServerFn(updateEducationRegistration);
+  const adminUpdate = useServerFn(adminUpdateEducationRegistration);
+  const typeLocked = edit?.kind === "student" && edit.paymentStatus !== "pending";
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -35,22 +45,24 @@ export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; ini
 
   // Resume an unfinished registration saved on this device.
   useEffect(() => {
+    if (edit) { setLoaded(true); return; }
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) { const parsed = JSON.parse(saved) as { values?: Values; step?: number }; if (parsed.values) setValues(v => ({ ...v, ...parsed.values })); if (typeof parsed.step === "number") setStep(parsed.step); }
     } catch { /* ignore a broken draft */ }
     if (initialCode) setValues(v => ({ ...v, coordinatorCode: initialCode.toUpperCase().slice(0, 40) }));
     setLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCode]);
-  useEffect(() => { if (loaded && !result) { const safeValues = { ...values }; for (const k of ['bankHolder','bankName','bankAccount','bankAccountConfirm','bankIfsc','aadhaarNumber','kycConsent']) delete safeValues[k]; localStorage.setItem(DRAFT_KEY, JSON.stringify({ values: safeValues, step })); } }, [values, step, loaded, result]);
+  useEffect(() => { if (loaded && !result && !edit) { const safeValues = { ...values }; for (const k of ['bankHolder','bankName','bankAccount','bankAccountConfirm','bankIfsc','aadhaarNumber','kycConsent']) delete safeValues[k]; localStorage.setItem(DRAFT_KEY, JSON.stringify({ values: safeValues, step })); } }, [values, step, loaded, result, edit]);
 
   const dob = String(values["dateOfBirth"] ?? "");
   const minor = /^\d{4}-\d{2}-\d{2}$/.test(dob) && isMinor(dob);
   const steps = useMemo(() => [
     { key: "education", fields: stepFields[0] ?? [] }, { key: "personal", fields: stepFields[1] ?? [] },
     ...(minor ? [{ key: "guardian", fields: stepFields[2] ?? [] }] : []),
-    { key: "coordinator", fields: stepFields[3] ?? [] }, { key: "apply", fields: stepFields[4] ?? [] }, { key: 'bank', fields: stepFields[6] ?? [] }, { key: "declaration", fields: stepFields[5] ?? [] }, { key: "review", fields: [] as string[] },
-  ], [minor]);
+    { key: "coordinator", fields: stepFields[3] ?? [] }, { key: "apply", fields: stepFields[4] ?? [] }, { key: 'bank', fields: edit && values["changePrivateDetails"] !== true ? [] : stepFields[6] ?? [] }, { key: "declaration", fields: stepFields[5] ?? [] }, { key: "review", fields: [] as string[] },
+  ], [minor, edit, values["changePrivateDetails"]]);
   const current = steps[Math.min(step, steps.length - 1)] ?? { key: 'education', fields: stepFields[0] ?? [] };
 
   const set = (name: string, value: string | boolean) => { setValues(v => ({ ...v, [name]: value })); setErrors(e => { const { [name]: _, ...rest } = e; return rest; }); };
@@ -63,6 +75,7 @@ export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; ini
   }
   async function send() {
     setFormError("");
+    if (edit) return void sendEdit();
     const parsed = educationSupportSchema.safeParse(values);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
@@ -82,6 +95,28 @@ export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; ini
     finally { setSending(false); }
   }
 
+  async function sendEdit() {
+    if (!edit) return;
+    const changePrivateDetails = values["changePrivateDetails"] === true;
+    const core = educationCoreSchema.safeParse(values);
+    const priv = changePrivateDetails ? educationPrivateSchema.safeParse(values) : null;
+    const issue = !core.success ? core.error.issues[0] : priv && !priv.success ? priv.error.issues[0] : undefined;
+    if (issue) {
+      const idx = steps.findIndex(s => s.fields.includes(String(issue.path[0])));
+      setErrors(stepErrors(values, steps[idx]?.fields ?? []));
+      if (idx >= 0) goTo(idx);
+      setFormError(issue.message);
+      return;
+    }
+    setSending(true);
+    try {
+      if (edit.kind === "admin") { await adminUpdate({ data: { id: edit.id, changePrivateDetails, values } }); edit.onDone(); }
+      else { setEditSaved(await studentUpdate({ data: { verify: edit.verify, changePrivateDetails, values } })); document.getElementById("registration-form")?.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    } catch (e) { setFormError(e instanceof Error ? e.message : "Something went wrong. Please try again."); }
+    finally { setSending(false); }
+  }
+
+  if (editSaved) return <EditSaved lang={lang} result={editSaved} onClose={edit?.onCancel ?? (() => setEditSaved(null))} />;
   if (result) return <RegistrationDone lang={lang} result={result} values={values} onNew={() => { setResult(null); setValues(emptyValues()); setStep(0); }} />;
 
   const field = (name: string, opts: { type?: string; options?: readonly string[]; required?: boolean; label?: string; full?: boolean; placeholder?: string; list?: string; inputMode?: "numeric" | "tel" | "email" } = {}) => {
@@ -109,6 +144,7 @@ export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; ini
     <ol className="flex gap-1.5" aria-label="Registration progress">
       {steps.map((s, i) => <li key={s.key} className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-edu-royal" : "bg-edu-navy/10"}`} aria-current={i === step ? "step" : undefined}><span className="sr-only">{eduSteps[s.key]?.[lang === "en" ? 0 : 1]}</span></li>)}
     </ol>
+    {edit && <p className="mt-4 rounded-lg bg-edu-sky px-3 py-2 text-sm font-semibold text-edu-navy">{lang === "en" ? "Editing registration" : "पंजीकरण एडिट हो रहा है"} {edit.kind === "student" ? edit.verify.ackNumber : ""}</p>}
     <p className="mt-4 text-xs font-bold uppercase tracking-wider text-edu-royal [&:lang(hi)]:tracking-normal">{lang === "en" ? `Step ${step + 1} of ${steps.length}` : `चरण ${step + 1} / ${steps.length}`}</p>
     <h3 className="mt-1 text-2xl font-black text-edu-navy">{eduSteps[current.key]?.[lang === "en" ? 0 : 1]}</h3>
 
@@ -158,7 +194,7 @@ export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; ini
 
       {current.key === "apply" && <fieldset className="sm:col-span-2"><legend className="sr-only">{t("applicationType")}</legend>
         <div className="grid gap-4 md:grid-cols-3">{applicationTypeKeys.map(k => { const a = applicationTypes[k]; const on = appType === k; return <label key={k} className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-5 transition ${on ? "border-edu-royal bg-edu-sky" : "border-edu-navy/10 hover:border-edu-royal/40"}`}>
-          <input type="radio" name="applicationType" id={k === "sponsorship" ? "edu-applicationType" : undefined} value={k} checked={on} onChange={() => set("applicationType", k)} className="sr-only" />
+          <input type="radio" name="applicationType" id={k === "sponsorship" ? "edu-applicationType" : undefined} value={k} checked={on} disabled={typeLocked && !on} onChange={() => set("applicationType", k)} className="sr-only" />
           {on && <CheckCircle2 className="absolute right-4 top-4 h-5 w-5 text-edu-royal" aria-hidden="true" />}
           <span className="text-base font-black text-edu-navy">{lang === "en" ? a.en : a.hi}</span>
           <span className="mt-3 text-3xl font-black text-edu-royal">₹{a.fee}</span>
@@ -166,10 +202,15 @@ export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; ini
           {a.maxAward && <span className="mt-3 text-xs text-edu-ink/75">{lang === "en" ? `Maximum potential award: ₹${a.maxAward.toLocaleString("en-IN")}` : `अधिकतम संभावित राशि: ₹${a.maxAward.toLocaleString("en-IN")}`}</span>}
         </label>; })}</div>
         {errors["applicationType"] && <span className="mt-2 block text-xs font-semibold text-destructive">{errors["applicationType"]}</span>}
+        {typeLocked && <p className="mt-3 rounded-lg bg-edu-sky px-3 py-2 text-xs text-edu-navy">{lang === "en" ? "You have already shared a payment ID, so the application type cannot be changed now." : "आप पेमेंट आईडी भेज चुके हैं, इसलिए अब आवेदन का प्रकार नहीं बदला जा सकता।"}</p>}
         <p className="mt-4 text-xs leading-relaxed text-edu-ink/70">{lang === "en" ? "Scholarship amounts are maximum potential awards, not guaranteed payments. Final eligibility and amounts depend on the selection criteria and the official decision." : "छात्रवृत्ति राशि अधिकतम संभावित राशि है, गारंटीशुदा भुगतान नहीं। अंतिम पात्रता और राशि चयन मानदंड और आधिकारिक निर्णय पर निर्भर है।"}</p>
       </fieldset>}
 
-      {current.key === 'bank' && <>
+      {current.key === 'bank' && edit && <label htmlFor="edu-changePrivateDetails" className="flex items-start gap-3 rounded-lg border border-edu-royal/30 bg-edu-sky p-3 text-sm font-semibold text-edu-navy sm:col-span-2">
+        <input id="edu-changePrivateDetails" type="checkbox" checked={values["changePrivateDetails"] === true} onChange={e => set("changePrivateDetails", e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--edu-royal)]" />
+        <span>{lang === "en" ? "I want to change bank or Aadhaar details. Leave unticked to keep the details already saved." : "मुझे बैंक या आधार जानकारी बदलनी है। पहले से सेव जानकारी रखने के लिए इसे खाली छोड़ें।"}</span>
+      </label>}
+      {current.key === 'bank' && (!edit || values["changePrivateDetails"] === true) && <>
         <p className="text-sm text-edu-ink sm:col-span-2">{lang === 'en' ? 'Enter bank and Aadhaar details as text. No document uploads. These details are encrypted and available only to authorised administrators; they are not saved in your device draft or printed on the acknowledgement.' : 'बैंक और आधार जानकारी लिखकर भरें। दस्तावेज़ अपलोड नहीं करें। यह जानकारी एन्क्रिप्टेड है और केवल अधिकृत एडमिन देख सकते हैं; डिवाइस ड्राफ्ट या पावती में नहीं रखी जाती।'}</p>
         {field('bankHolder')}{field('bankName')}{field('bankAccount', { inputMode: 'numeric', type: 'password' })}{field('bankAccountConfirm', { inputMode: 'numeric', type: 'password' })}{field('bankIfsc')}{field('aadhaarNumber', { inputMode: 'numeric', type: 'password' })}{check('kycConsent')}
       </>}
@@ -182,11 +223,12 @@ export function EducationSupportForm({ lang, initialCode }: { lang: EduLang; ini
       </div>}
     </div>
 
+    {edit && <div className="mt-6"><Button type="button" variant="ghost" disabled={sending} onClick={edit.onCancel} className="h-9 rounded-full px-4 text-edu-navy hover:bg-edu-sky hover:text-edu-navy">{lang === "en" ? "Cancel editing" : "एडिट रद्द करें"}</Button></div>}
     {formError && <p role="alert" className="mt-4 text-sm font-semibold text-destructive">{formError}</p>}
     <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
       <Button type="button" variant="outline" disabled={step === 0 || sending} onClick={() => goTo(step - 1)} className="h-11 rounded-full border-edu-navy/20 bg-transparent px-6 text-edu-navy hover:bg-edu-sky hover:text-edu-navy"><ArrowLeft className="h-4 w-4" />{t("back")}</Button>
       {current.key === "review"
-        ? <Button type="button" disabled={sending} onClick={() => void send()} className="h-11 rounded-full bg-edu-royal px-8 text-edu-paper hover:bg-edu-royal/90">{sending ? t("submitting") : t("submit")}</Button>
+        ? <Button type="button" disabled={sending} onClick={() => void send()} className="h-11 rounded-full bg-edu-royal px-8 text-edu-paper hover:bg-edu-royal/90">{sending ? t("submitting") : edit ? (lang === "en" ? "Save changes" : "बदलाव सेव करें") : t("submit")}</Button>
         : <Button type="button" onClick={next} className="h-11 rounded-full bg-edu-royal px-8 text-edu-paper hover:bg-edu-royal/90">{t("next")}<ArrowRight className="h-4 w-4" /></Button>}
     </div>
   </div>;
@@ -248,5 +290,20 @@ function RegistrationDone({ lang, result, values, onNew }: { lang: EduLang; resu
       </Button>
       <Button type="button" variant="ghost" onClick={onNew} className="h-11 rounded-full text-edu-navy hover:bg-edu-sky hover:text-edu-navy">{lang === "en" ? "Register another student" : "दूसरे विद्यार्थी का पंजीकरण"}</Button>
     </div>
+  </div>;
+}
+
+function EditSaved({ lang, result, onClose }: { lang: EduLang; result: EditSavedResult; onClose: () => void }) {
+  const app = applicationTypes[result.applicationType];
+  return <div id="registration-form" role="status" className="scroll-mt-6 rounded-3xl border border-edu-navy/10 bg-edu-paper p-5 text-edu-ink shadow-[0_20px_60px_-30px_rgba(11,31,75,0.35)] sm:p-8">
+    <CheckCircle2 className="h-12 w-12 text-edu-royal" aria-hidden="true" />
+    <h3 className="mt-3 text-2xl font-black text-edu-navy">{lang === "en" ? "Changes saved" : "बदलाव सेव हो गए"}</h3>
+    <p className="mt-2 text-sm text-edu-ink/75">{lang === "en" ? "Your acknowledgement number stays the same:" : "आपकी पावती संख्या वही रहेगी:"}</p>
+    <p className="mt-1 select-all break-all text-2xl font-black text-edu-royal sm:text-3xl">{result.ackNumber}</p>
+    {result.paymentStatus === "pending" && app && <div className="mt-6 rounded-2xl bg-edu-navy p-5 text-edu-paper">
+      <p className="text-sm font-semibold">{lang === "en" ? "Registration fee still to pay" : "पंजीकरण शुल्क अभी बाकी है"} · ₹{app.fee}</p>
+      <a href={app.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-edu-paper px-6 text-sm font-black text-edu-navy hover:bg-edu-sky">{lang === "en" ? `Pay ₹${app.fee} securely` : `₹${app.fee} सुरक्षित रूप से भरें`}<ExternalLink className="h-4 w-4" aria-hidden="true" /></a>
+    </div>}
+    <Button type="button" variant="outline" onClick={onClose} className="mt-6 h-11 rounded-full border-edu-navy/20 bg-transparent text-edu-navy hover:bg-edu-sky hover:text-edu-navy">{lang === "en" ? "Done" : "ठीक है"}</Button>
   </div>;
 }
