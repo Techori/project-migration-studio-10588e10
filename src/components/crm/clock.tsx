@@ -1,0 +1,8 @@
+import { useEffect,useState } from 'react';
+export function CrmClock(){
+ const [now,setNow]=useState<Date|null>(null);
+ useEffect(()=>{setNow(new Date());const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t);},[]);
+ const parts=now?new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now).split(':').map(Number):[0,0,0];
+ const h=parts[0]??0,m=parts[1]??0,s=parts[2]??0;
+ return <div className="flex items-center gap-3"><svg viewBox="0 0 100 100" role="img" aria-label="India time analog clock" className="h-14 w-14 shrink-0 text-foreground"><circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="2" />{Array.from({length:12},(_,i)=><line key={i} x1="50" y1="9" x2="50" y2="15" stroke="currentColor" transform={`rotate(${i*30} 50 50)`} />)}<line x1="50" y1="50" x2="50" y2="29" stroke="currentColor" strokeWidth="4" strokeLinecap="round" transform={`rotate(${h%12*30+m/2} 50 50)`}/><line x1="50" y1="50" x2="50" y2="19" stroke="currentColor" strokeWidth="2" transform={`rotate(${m*6+s/10} 50 50)`}/><line x1="50" y1="57" x2="50" y2="15" className="stroke-primary" transform={`rotate(${s*6} 50 50)`}/><circle cx="50" cy="50" r="3" className="fill-primary"/></svg><div><p className="text-sm font-bold tabular-nums">{now?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`:'—'}</p><p className="text-[10px] text-muted-foreground">India · IST</p></div></div>;
+}

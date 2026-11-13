@@ -5,7 +5,20 @@ let lastCapturedError: { error: unknown; at: number } | undefined;
 const TTL_MS = 5_000;
 
 function record(error: unknown) {
+  if (isExpectedAbort(error)) return;
   lastCapturedError = { error, at: Date.now() };
+}
+
+// Framework HTTPError wrappers can turn an ordinary disconnect into a 500.
+// Classify the underlying cause, while preserving every non-abort failure.
+export function isExpectedAbort(error: unknown): boolean {
+  let current = error;
+  for (let depth = 0; depth < 5 && current != null; depth++) {
+    if (typeof current !== "object") return false;
+    if ("name" in current && current.name === "AbortError") return true;
+    current = "cause" in current ? current.cause : undefined;
+  }
+  return false;
 }
 
 // h3's HTTPError serializes to {"status":500,"unhandled":true,"message":"HTTPError"} —
@@ -54,6 +67,7 @@ function isErrorLike(value: unknown): value is Error {
 // recorded for consumeLastCapturedError and expanded before serialization.
 const originalConsoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
+  if (args.some(isExpectedAbort)) return;
   const expanded = args.map((arg) => {
     if (!isErrorLike(arg)) return arg;
     record(arg);

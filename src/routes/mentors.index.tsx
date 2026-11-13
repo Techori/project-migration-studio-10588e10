@@ -1,0 +1,8 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { PeoplePage } from "@/components/people-page";
+
+export const Route = createFileRoute("/mentors/")({
+  staticData: { sitemap: true },
+  head: () => ({ meta: [{ title: "Our Mentors | Riloyd" }, { name: "description", content: "Explore Riloyd's mentor network and the practical experience helping founders and growing businesses make better decisions." }, { property: "og:title", content: "Our Mentors | Riloyd" }, { property: "og:description", content: "Experienced perspectives for founders, startups and growing businesses." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }], links: [{ rel: "canonical", href: "/mentors" }] }),
+  component: () => <PeoplePage group="mentors" eyebrow="Our mentors" title="Experience shared." accent="Progress accelerated." intro="RILOYD mentors bring practical experience, independent perspective and constructive challenge to founders and business leaders navigating growth." sectionTitle="Guidance shaped by real business experience." cta="Become a Mentor" ctaTo="/register/mentor" items={[["Founder Guidance", "Help leaders examine priorities, assumptions and the choices ahead."], ["Market Perspective", "Share informed context on customers, industries and commercial realities."], ["Growth Planning", "Support practical thinking around scale, teams and execution."], ["Funding Preparation", "Help businesses communicate their opportunity with greater clarity."], ["Leadership Support", "Provide a trusted perspective during complex or high-stakes decisions."], ["Capability Building", "Turn experience into knowledge that strengthens the next generation of businesses."]]} />,
+});

@@ -1,0 +1,3 @@
+- Sitemap paths derive from explicit route staticData decisions and shared service slugs; exclude private/noindex pages and omit lastmod without authoritative page timestamps.
+- Young Innovators presentation uses page-scoped theme tokens and a dedicated image-backed header; retain its content, deferred forms and shared programme rules independently of visual redesigns.
+- Student project suggestions use the typed AI Gateway Responses SDK through a validated, same-origin, durably limited streaming route; guardian consent is required and descriptions are not persisted.
