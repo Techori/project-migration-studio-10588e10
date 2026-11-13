@@ -1,0 +1,15 @@
+[
+  {"capability":"code","source":"code archive (TanStack Start, RILOYD website + admin + CRM)","outcome":"migrate","status":"verified","next_action":"none; typecheck clean, 168 tests pass, 18 pages load without errors"},
+  {"capability":"schema","source":"original generated types + CRM SQL + setup baseline","outcome":"migrate","status":"verified","next_action":"all 30 tables and columns match the original types exactly; run admin Setup check once an admin exists"},
+  {"capability":"records","source":"previous Cloud database (no export attached)","outcome":"migrate","status":"pending","next_action":"user to supply per-table CSV/JSON exports; import via admin Import records after filtering"},
+  {"capability":"auth identities","source":"previous Cloud auth (admin/staff/CRM users)","outcome":"migrate","status":"pending","next_action":"user to supply users export (ids + emails); moved users verify email and set a new password at /reset-password"},
+  {"capability":"authorization","source":"user_roles/has_role, crm_memberships, education_staff_access","outcome":"migrate","status":"implemented","next_action":"verify admin tabs after first admin signs up at /admin and claims setup"},
+  {"capability":"file bytes","source":"registration-documents, customer-reports, country-logos buckets","outcome":"migrate","status":"pending","next_action":"buckets created (private); restore files via admin Restore files after records import"},
+  {"capability":"AI","source":"Lovable AI Gateway","outcome":"preserve","status":"verified","next_action":"none; student project ideas streamed a real answer"},
+  {"capability":"public endpoints","source":"/api/public/prototype-assessment, student-project-ideas, young-market-plan, sitemap.xml","outcome":"preserve","status":"verified","next_action":"none"},
+  {"capability":"external providers","source":"Zoho embed (summit popup)","outcome":"preserve","status":"implemented","next_action":"none"},
+  {"capability":"schedules","source":"none used","outcome":"none","status":"verified","next_action":"none"},
+  {"capability":"secrets","source":".env (excluded)","outcome":"migrate","status":"verified","next_action":"Cloud keys and AI key provisioned automatically"},
+  {"capability":"cutover","source":"-","outcome":"pending","status":"pending","next_action":"publish, then reconnect custom domain and Google Search Console"},
+  {"capability":"verification","source":"-","outcome":"verify","status":"partial","next_action":"contact form saved + CRM lead created (test row removed); admin/CRM flows await first admin account"}
+]

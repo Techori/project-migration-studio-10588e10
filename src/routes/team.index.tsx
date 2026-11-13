@@ -1,0 +1,9 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { EmployeeVerify } from "@/components/employee-verify";
+import { PeoplePage } from "@/components/people-page";
+
+export const Route = createFileRoute("/team/")({
+  staticData: { sitemap: true },
+  head: () => ({ meta: [{ title: "Our Team & Employee Verification | Riloyd" }, { name: "description", content: "Meet the thinking behind Riloyd's research, strategy, funding, growth and transformation advisory work." }, { property: "og:title", content: "Our Team | Riloyd" }, { property: "og:description", content: "A multidisciplinary advisory team focused on insight, decisions and execution." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }], links: [{ rel: "canonical", href: "/team" }] }),
+  component: () => <PeoplePage group="team" eyebrow="Our team" title="Different expertise." accent="One business perspective." intro="RILOYD brings together research, strategy, commercial, funding and execution perspectives to help businesses see the wider picture and move with clarity." sectionTitle="Built to understand the whole business." cta="Talk to Our Team" ctaTo="/contact" items={[["Research & Analysis", "Evidence-led thinking that turns complexity into a useful business view."], ["Strategy", "Clear choices, priorities and direction grounded in commercial reality."], ["Funding Advisory", "Preparation and perspective for better capital decisions."], ["Growth", "Customer, market and revenue thinking designed for action."], ["Transformation", "Practical change across people, process and technology."], ["Business Relationships", "Connected support shaped around long-term progress."]]}><EmployeeVerify /></PeoplePage>,
+});

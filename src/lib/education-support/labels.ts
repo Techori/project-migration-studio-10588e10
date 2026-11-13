@@ -1,0 +1,50 @@
+// English / Hindi labels for the Education Support registration form.
+export type EduLang = "en" | "hi";
+export const eduLabels: Record<string, [string, string]> = {
+  bankHolder: ["Bank account holder name", "बैंक खाताधारक का नाम"], bankName: ["Bank name", "बैंक का नाम"],
+  bankAccount: ["Bank account number", "बैंक खाता संख्या"], bankAccountConfirm: ["Confirm account number", "खाता संख्या दोबारा भरें"], bankIfsc: ["IFSC code", "IFSC कोड"],
+  aadhaarNumber: ["Full Aadhaar number", "पूरी आधार संख्या"],
+  kycConsent: ["I consent to secure processing of bank and Aadhaar details for application verification. For a minor, I provide this consent as their parent/legal guardian.", "मैं आवेदन सत्यापन के लिए बैंक और आधार जानकारी के सुरक्षित उपयोग की सहमति देता/देती हूँ। नाबालिग के लिए यह सहमति माता-पिता/कानूनी अभिभावक की ओर से है।"],
+  studentCategory: ["Student category", "विद्यार्थी श्रेणी"],
+  school: ["School student (Class 4–12)", "स्कूल विद्यार्थी (कक्षा 4–12)"],
+  ug: ["Undergraduate (UG) student", "स्नातक (UG) विद्यार्थी"],
+  pg: ["Postgraduate (PG) student", "स्नातकोत्तर (PG) विद्यार्थी"],
+  currentClass: ["Current class", "वर्तमान कक्षा"], schoolName: ["School name", "स्कूल का नाम"], schoolType: ["School type", "स्कूल का प्रकार"], schoolBoard: ["School board", "बोर्ड"],
+  schoolAddress: ["School address", "स्कूल का पता"], schoolCity: ["School city", "स्कूल का शहर"], schoolState: ["State", "राज्य"], schoolPin: ["PIN code", "पिन कोड"],
+  educationSector: ["Education sector", "शिक्षा क्षेत्र"], educationSectorSchool: ["Intended field of study (optional)", "भविष्य में पढ़ाई का क्षेत्र (वैकल्पिक)"],
+  courseName: ["Course name", "कोर्स का नाम"], courseSpecialization: ["Course specialization", "विशेषज्ञता"], collegeName: ["College / university name", "कॉलेज / विश्वविद्यालय का नाम"],
+  enrollmentNumber: ["University registration / enrollment no.", "विश्वविद्यालय पंजीकरण / नामांकन संख्या"], currentYear: ["Current year", "वर्तमान वर्ष"], currentSemester: ["Current semester", "वर्तमान सेमेस्टर"],
+  studyMode: ["Study mode", "अध्ययन का तरीका"], collegeState: ["College state", "कॉलेज का राज्य"], collegeCity: ["College city", "कॉलेज का शहर"], academicSession: ["Academic session", "शैक्षणिक सत्र"],
+  studentName: ["Student full name", "विद्यार्थी का पूरा नाम"], fatherName: ["Father's name", "पिता का नाम"], motherName: ["Mother's name", "माता का नाम"], dateOfBirth: ["Date of birth", "जन्म तिथि"],
+  gender: ["Gender", "लिंग"], nationality: ["Nationality", "राष्ट्रीयता"], mobile: ["Mobile number", "मोबाइल नंबर"], whatsapp: ["WhatsApp number", "व्हाट्सऐप नंबर"], email: ["Email address", "ईमेल पता"],
+  permanentAddress: ["Permanent address", "स्थायी पता"], currentAddress: ["Current address", "वर्तमान पता"], sameAddress: ["Same as permanent address", "स्थायी पते के समान"],
+  state: ["State", "राज्य"], district: ["District", "ज़िला"], city: ["City", "शहर"], pinCode: ["PIN code", "पिन कोड"],
+  guardianName: ["Parent / guardian full name", "माता-पिता / अभिभावक का पूरा नाम"], guardianMobile: ["Parent / guardian mobile", "अभिभावक का मोबाइल"], guardianEmail: ["Parent / guardian email", "अभिभावक का ईमेल"],
+  guardianRelationship: ["Relationship to student", "विद्यार्थी से संबंध"], guardianConsent: ["I am the parent / legal guardian and I consent to this registration.", "मैं माता-पिता / कानूनी अभिभावक हूँ और इस पंजीकरण के लिए सहमति देता/देती हूँ।"],
+  withoutCoordinator: ["I am registering without a coordinator.", "मैं बिना कोऑर्डिनेटर के पंजीकरण कर रहा/रही हूँ।"],
+  coordinatorName: ["Coordinator name", "कोऑर्डिनेटर का नाम"], coordinatorMobile: ["Coordinator mobile", "कोऑर्डिनेटर का मोबाइल"], coordinatorWhatsapp: ["Coordinator WhatsApp", "कोऑर्डिनेटर का व्हाट्सऐप"],
+  coordinatorEmail: ["Coordinator email", "कोऑर्डिनेटर का ईमेल"], coordinatorType: ["Coordinator type", "कोऑर्डिनेटर का प्रकार"], coordinatorInstitution: ["School / college / institution name", "स्कूल / कॉलेज / संस्था का नाम"],
+  coordinatorIdText: ["Coordinator ID (optional)", "कोऑर्डिनेटर आईडी (वैकल्पिक)"], coordinatorCode: ["Employee / coordinator code (optional)", "कर्मचारी / कोऑर्डिनेटर कोड (वैकल्पिक)"],
+  applicationType: ["Apply for", "आवेदन किसके लिए"],
+  confirmAccurate: ["I confirm that all information provided by me is accurate.", "मैं पुष्टि करता/करती हूँ कि दी गई सभी जानकारी सही है।"],
+  agreeTerms: ["I agree to the registration terms and conditions.", "मैं पंजीकरण के नियम व शर्तों से सहमत हूँ।"],
+  consentVerification: ["I consent to verification of my educational and identity documents when requested.", "माँगे जाने पर मैं अपने शैक्षणिक और पहचान दस्तावेज़ों के सत्यापन की सहमति देता/देती हूँ।"],
+  authorizeContact: ["I authorise RILOYD Foundation to contact me about my application.", "मैं RILOYD फ़ाउंडेशन को मेरे आवेदन के बारे में संपर्क करने की अनुमति देता/देती हूँ।"],
+  understandFees: ["I understand the registration fee is separate from scholarship / sponsorship selection.", "मैं समझता/समझती हूँ कि पंजीकरण शुल्क छात्रवृत्ति / स्पॉन्सरशिप चयन से अलग है।"],
+  select: ["Select…", "चुनें…"], optional: ["optional", "वैकल्पिक"],
+  next: ["Continue", "आगे बढ़ें"], back: ["Back", "पीछे"], submit: ["Submit registration", "पंजीकरण जमा करें"], submitting: ["Submitting…", "जमा हो रहा है…"],
+  coursePlaceholder: ["Search or type your course", "अपना कोर्स खोजें या लिखें"],
+};
+
+export const eduSteps: Record<string, [string, string]> = {
+  bank: ["Bank & identity details", "बैंक और पहचान जानकारी"],
+  education: ["Category & education", "श्रेणी और शिक्षा"],
+  personal: ["Personal details", "व्यक्तिगत जानकारी"],
+  guardian: ["Parent / guardian", "अभिभावक"],
+  coordinator: ["Coordinator", "कोऑर्डिनेटर"],
+  apply: ["Apply for", "आवेदन"],
+  declaration: ["Declaration", "घोषणा"],
+  review: ["Review & submit", "जाँचें और जमा करें"],
+};
+
+export const lbl = (lang: EduLang, key: string) => eduLabels[key]?.[lang === "en" ? 0 : 1] ?? key;

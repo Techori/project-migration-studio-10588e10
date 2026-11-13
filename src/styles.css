@@ -1,10 +1,3 @@
-/*
- * Tailwind v4 entry: config lives here, with no tailwind.config.js or PostCSS plugin.
- * - Keep every @import in this top block, above @theme and the rest of the file. Install an
- *   npm package before @importing its CSS. Never @import a remote URL (web fonts, CDN CSS): the
- *   build resolves @import from the filesystem. Load those with a <link> in the head() of
- *   src/routes/__root.tsx and name the family in a --font-* token in @theme inline below.
- */
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -13,10 +6,6 @@
 
 /*
  * Design system definition.
- *
- * The design lives in this file: oklch color tokens on the shadcn variables
- * (--background, --foreground, --primary, --secondary, --muted, --accent, ...) plus
- * new tokens as needed, font tokens, and custom styles and animations.
  *
  * The @theme inline block maps CSS custom properties to Tailwind utility
  * classes (e.g. --color-primary -> bg-primary, text-primary).
@@ -30,6 +19,7 @@
  */
 
 @theme inline {
+  --font-sans: "Montserrat", sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -38,6 +28,7 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
+  --color-footer: var(--footer);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -70,29 +61,61 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-soft: var(--soft);
+  --color-surface: var(--surface);
+  --color-challenge-gold: var(--challenge-gold);
+  --color-foundation-green: var(--foundation-green);
+  --color-foundation-maroon: var(--foundation-maroon);
+  --color-foundation-gold: var(--foundation-gold);
+  --color-foundation-paper: var(--foundation-paper);
+  --color-foundation-sage: var(--foundation-sage);
+  --color-foundation-ink: var(--foundation-ink);
+  --color-edu-navy: var(--edu-navy);
+  --color-edu-royal: var(--edu-royal);
+  --color-edu-sky: var(--edu-sky);
+  --color-edu-paper: var(--edu-paper);
+  --color-edu-ink: var(--edu-ink);
+  --color-crm-success: var(--crm-success);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --crm-success: oklch(0.52 0.13 160);
+  --radius: 0.375rem;
+  /* RILOYD Foundation brand palette: fixed across site themes. */
+  --foundation-green: #123d30;
+  --foundation-maroon: #8b1426;
+  --foundation-gold: #d9b65d;
+  --foundation-paper: #f8f8f5;
+  --foundation-sage: #e8f0ea;
+  --foundation-ink: #17221d;
+  /* Education Support registration palette (navy / royal blue): fixed across site themes. */
+  --edu-navy: #0b1f4b;
+  --edu-royal: #1d4ed8;
+  --edu-sky: #eaf0ff;
+  --edu-paper: #ffffff;
+  --edu-ink: #0f172a;
+  --background: oklch(0.055 0 0);
+  --footer: oklch(0 0 0);
+  --foreground: oklch(0.985 0 0);
+  --soft: oklch(0.84 0 0);
+  --surface: oklch(0.085 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.625 0.27 28);
+  --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
+  --muted-foreground: oklch(0.72 0 0);
   --accent: oklch(0.968 0.007 247.896);
   --accent-foreground: oklch(0.208 0.042 265.755);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.25 0 0);
+  --ring: oklch(0.625 0.27 28);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -143,6 +166,77 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/* The original Riloyd charcoal palette remains the default. Light mode
+   switches surfaces without changing the brand's red accent. */
+.light {
+  --background: oklch(0.978 0.003 80);
+  --footer: oklch(0.94 0.003 80);
+  --foreground: oklch(0.16 0.005 40);
+  --soft: oklch(0.16 0.005 40);
+  --surface: oklch(0.94 0.004 80);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.16 0.005 40);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.16 0.005 40);
+  --primary: oklch(0.53 0.22 28);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.925 0.005 80);
+  --secondary-foreground: oklch(0.16 0.005 40);
+  --muted: oklch(0.925 0.005 80);
+  --muted-foreground: oklch(0.16 0.005 40);
+  --accent: oklch(0.925 0.005 80);
+  --accent-foreground: oklch(0.16 0.005 40);
+  --border: oklch(0.81 0.005 80);
+  --input: oklch(0.81 0.005 80);
+  --ring: oklch(0.53 0.22 28);
+}
+/* Seasonal theme is isolated and removable; dark/light tokens remain intact. */
+.diwali {
+  --background: oklch(0.13 0.012 25);
+  --footer: oklch(0.1 0.012 25);
+  --surface: oklch(0.19 0.023 25);
+  --foreground: oklch(0.97 0.025 85);
+  --soft: oklch(0.87 0.04 85);
+  --primary: oklch(0.84 0.16 85);
+  --primary-foreground: oklch(0.17 0.025 25);
+  --muted-foreground: oklch(0.82 0.035 85);
+  --border: oklch(0.44 0.075 75);
+  --input: oklch(0.44 0.075 75);
+  --ring: oklch(0.84 0.16 85);
+  --festival-glow: 0 0 20px oklch(0.84 0.16 85 / .24);
+  --festival-text-glow: 0 0 18px oklch(0.84 0.16 85 / .22);
+}
+.diwali .young-challenge-page {
+  --background: oklch(0.13 0.012 25);
+  --surface: oklch(0.19 0.023 25);
+  --foreground: oklch(0.97 0.025 85);
+  --primary: oklch(0.84 0.16 85);
+  --primary-foreground: oklch(0.17 0.025 25);
+  --muted-foreground: oklch(0.82 0.035 85);
+  --border: oklch(0.44 0.075 75);
+  --input: oklch(0.44 0.075 75);
+  --challenge-gold: oklch(0.89 0.15 85);
+  --challenge-wine: oklch(0.24 0.06 25);
+  --challenge-glow: var(--festival-glow);
+}
+.diwali-decoration { position: absolute; left: 0; right: 0; top: 100%; height: 64px; overflow: hidden; pointer-events: none; z-index: 40; }
+.diwali-toran { height: 100%; background-repeat: repeat-x; background-size: auto 100%; background-position: center top; filter: drop-shadow(0 6px 10px oklch(0 0 0 / .5)); }
+.diwali :is(h1,h2,h3) { text-shadow: var(--festival-text-glow); }
+.diwali [data-slot="button"]:not([data-variant="ghost"]):focus-visible { box-shadow: var(--festival-glow); }
+.diwali .young-challenge-page :is(#journey li,#fees-rewards article) { box-shadow: var(--festival-glow); }
+.diwali header { border-bottom-color: var(--primary); }
+@media (max-width: 639px) { .diwali-decoration { height: 42px; } .diwali .hero-shell > .relative { padding-top: 4rem; } }
+.light section:has(> img.absolute), .light .why-panel:has(> img.absolute) {
+  --background: oklch(0.055 0 0);
+  --foreground: oklch(0.985 0 0);
+  --soft: oklch(0.84 0 0);
+  --surface: oklch(0.085 0 0);
+  color: var(--foreground);
+}
+.light .location-band { background: var(--surface); }
+.light .registration-form input[type="date"], .light .registration-form select { color-scheme: light; }
+.light .incubation-community-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .94), oklch(0.03 0 0 / .68) 48%, transparent 82%); }
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -151,5 +245,432 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
   }
+
+  html { scroll-behavior: smooth; }
 }
+
+.hero-shade {
+  background: linear-gradient(90deg, oklch(0.03 0 0 / 0.99) 0%, oklch(0.03 0 0 / 0.9) 31%, oklch(0.03 0 0 / 0.25) 62%, oklch(0.03 0 0 / 0.24) 100%);
+}
+.prototype-hero { min-height: 580px; }
+.innovators-hero { min-height: 530px; }
+.innovators-shade { background: linear-gradient(90deg, var(--background), color-mix(in oklab, var(--background) 86%, transparent) 30%, transparent 68%); }
+.innovators-tricolour { --india-saffron: oklch(0.76 0.17 58); --india-white: oklch(0.985 0 0); --india-green: oklch(0.5 0.14 145); background: linear-gradient(90deg, var(--india-saffron) 0% 33.33%, var(--india-white) 33.33% 66.66%, var(--india-green) 66.66% 100%); }
+.young-challenge-page {
+  --background: oklch(0.07 0 0);
+  --foreground: oklch(0.985 0 0);
+  --surface: oklch(0.12 0.008 20);
+  --primary: oklch(0.62 0.255 25);
+  --primary-foreground: oklch(1 0 0);
+  --muted-foreground: oklch(0.79 0.005 20);
+  --border: oklch(0.3 0.04 20);
+  --input: oklch(0.32 0.025 20);
+  --secondary: oklch(0.95 0 0);
+  --secondary-foreground: oklch(0.15 0 0);
+  --challenge-gold: oklch(0.83 0.16 82);
+  --challenge-wine: oklch(0.2 0.065 23);
+  --challenge-glow: 0 0 28px color-mix(in oklab, var(--primary) 24%, transparent);
+  color-scheme: dark;
+}
+.young-challenge-hero { min-height: 590px; }
+.young-challenge-hero > img { object-position: center center; }
+.young-challenge-shade { background: linear-gradient(90deg, var(--background), color-mix(in oklab, var(--background) 92%, transparent) 25%, transparent 64%); }
+.young-benefits-band { background: var(--challenge-wine); }
+.young-challenge-page > section > div { padding-top: 40px; padding-bottom: 40px; }
+.young-challenge-page #journey h2, .young-challenge-page #fees-rewards h2 { font-size: 28px; text-transform: uppercase; }
+.young-challenge-page #journey ol { gap: 12px; }
+.young-challenge-page #journey li { position: relative; padding: 20px 16px; border: 1px solid var(--border); border-radius: 8px; background: linear-gradient(145deg, var(--surface), var(--background)); }
+.young-challenge-page #journey li > span { display: inline-grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); font-size: 20px; box-shadow: var(--challenge-glow); }
+.young-challenge-page #journey li h3 { min-height: 40px; }
+.young-challenge-page #fees-rewards { border-top: 1px solid var(--primary); }
+.young-challenge-page #fees-rewards article { border-top: 3px solid var(--primary); }
+.young-challenge-page #fees-rewards article:nth-child(2) { border-top-color: var(--challenge-gold); }
+.young-challenge-page #fees-rewards article:nth-child(3) { border-top-color: var(--chart-2); }
+.young-rewards-total { background: var(--primary); color: var(--primary-foreground); box-shadow: var(--challenge-glow); }
+.young-challenge-page .registration-form select { color-scheme: dark; }
+.light .young-challenge-page {
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.2 0.005 25);
+  --surface: oklch(0.96 0.005 25);
+  --primary: oklch(0.52 0.21 25);
+  --muted-foreground: oklch(0.43 0.008 25);
+  --border: oklch(0.82 0.015 25);
+  --input: oklch(0.75 0.015 25);
+  --challenge-gold: oklch(0.48 0.09 75);
+  --challenge-wine: oklch(0.94 0.025 25);
+  --secondary: oklch(0.93 0.006 25);
+  --secondary-foreground: oklch(0.2 0 0);
+  color-scheme: light;
+}
+.young-challenge-page :is(input,textarea,select) { min-width: 0; font-size: 16px; }
+.young-challenge-page :is(input,select) { min-height: 44px; }
+.young-challenge-page :is(form,fieldset,section > div,section > div > div) { min-width: 0; }
+.young-challenge-page .young-section-nav a { min-height: 36px; white-space: normal; }
+.young-challenge-page [data-slot="checkbox"] { flex-shrink: 0; }
+.young-challenge-page .young-hero-copy { position: relative; z-index: 1; }
+.light .young-challenge-page .young-challenge-hero {
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.2 0.005 25);
+  --muted-foreground: oklch(0.43 0.008 25);
+  color: var(--foreground);
+}
+.young-challenge-page .young-section-nav a { color: var(--foreground); }
+@media (max-width: 639px) {
+  .young-challenge-page .young-challenge-hero { min-height: 0; padding-bottom: 250px; }
+  .young-challenge-page .young-challenge-hero > img { height: 300px; }
+  .young-challenge-page .young-challenge-shade { background: linear-gradient(180deg, var(--background) 0%, var(--background) calc(100% - 290px), transparent calc(100% - 220px)); }
+  .young-challenge-page .young-hero-copy h1 > span:nth-child(3) { font-size: 32px; }
+  .young-challenge-page .young-hero-copy > p:nth-of-type(2) { font-size: 18px; }
+  .young-challenge-page .young-hero-copy > div:last-child { display: grid; gap: 10px; }
+  .young-challenge-page .young-hero-copy > div:last-child a { width: 100%; }
+  .young-challenge-page #journey li { display: grid; grid-template-columns: 40px minmax(0,1fr); column-gap: 14px; padding: 16px; }
+  .young-challenge-page #journey li > span { grid-row: span 2; }
+  .young-challenge-page #journey li h3 { margin-top: 0; }
+  .young-challenge-page #journey li p { margin-top: 7px; }
+  .young-challenge-page #fees-rewards h3 { font-size: 18px; }
+  .young-challenge-page #fees-rewards article { padding: 12px 8px; }
+  .young-challenge-page #fees-rewards article a { gap: 4px; }
+  .young-challenge-page #fees-rewards .grid-cols-\[110px_1fr\] { grid-template-columns: 78px minmax(0,1fr); gap: 12px; }
+  .young-challenge-page #fees-rewards .grid-cols-\[110px_1fr\] p.text-lg { font-size: 16px; }
+  .young-challenge-page .young-rewards-total { font-size: 16px; }
+  .young-challenge-page #idea-video ol > li { grid-template-columns: 70px minmax(0,1fr); gap: 12px; }
+  .young-challenge-page :is(#registration,#market-plan,#project-ideas) button { max-width: 100%; white-space: normal; height: auto; min-height: 44px; }
+  .young-challenge-page > section:last-child a { white-space: normal; height: auto; min-height: 48px; }
+}
+@media (max-width: 1023px) and (min-width: 640px) { .young-challenge-hero > img { object-position: 58% center; } .young-challenge-shade { background: linear-gradient(90deg, var(--background), color-mix(in oklab, var(--background) 90%, transparent) 40%, transparent); } }
+@media (max-width: 639px) {
+  .young-challenge-hero { min-height: 820px; }
+  .young-challenge-hero > img { object-position: 70% bottom; height: 410px; top: auto; }
+  .young-challenge-shade { background: linear-gradient(180deg, var(--background) 0%, var(--background) 49%, color-mix(in oklab, var(--background) 72%, transparent) 65%, transparent 85%); }
+  .young-challenge-page > section > div { padding-top: 32px; padding-bottom: 32px; }
+  .young-challenge-page #journey li h3 { min-height: 0; }
+}
+@media (max-width: 639px) {
+  .innovators-hero { min-height: 700px; }
+  .innovators-hero > img { object-position: 65% bottom; }
+  .innovators-shade { background: linear-gradient(180deg, var(--background), color-mix(in oklab, var(--background) 94%, transparent) 40%, color-mix(in oklab, var(--background) 18%, transparent) 78%); }
+}
+.prototype-hero .hero-shade { background: linear-gradient(90deg, var(--background) 0%, color-mix(in oklab, var(--background) 92%, transparent) 30%, color-mix(in oklab, var(--background) 20%, transparent) 70%, transparent); }
+.prototype-page article { transition: border-color .2s ease, transform .2s ease; }
+.prototype-page article:hover { border-color: var(--primary); transform: translateY(-3px); }
+@media (max-width: 639px) {
+  .prototype-hero { min-height: 690px; }
+  .prototype-hero > img { object-position: 64% center; }
+  .prototype-hero .hero-shade { background: linear-gradient(180deg, var(--background) 0%, color-mix(in oklab, var(--background) 90%, transparent) 40%, color-mix(in oklab, var(--background) 30%, transparent) 75%, transparent); }
+}
+.hero-shell::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, oklch(0.03 0 0 / .7), transparent 35%); pointer-events: none; }
+.headline { letter-spacing: 0; text-shadow: 0 3px 20px oklch(0 0 0 / .45); }
+.eyebrow { letter-spacing: .38em; }
+.eyebrow::after { content: ""; display: inline-block; width: 2.2rem; height: 2px; margin-left: 1rem; vertical-align: middle; background: var(--primary); }
+.nav-link { position: relative; padding-block: .75rem; }
+.nav-link::after { content: ""; position: absolute; left: 0; right: 100%; bottom: .25rem; height: 2px; background: var(--primary); transition: right .2s ease; }
+.nav-link:hover::after, .nav-active::after { right: 0; }
+.outline-cta { border-color: var(--primary); transition: background-color .2s ease; }
+.outline-cta:hover, .solid-cta:hover { background-color: oklch(0.54 0.25 28); }
+.solid-cta { transition: background-color .2s ease, transform .2s ease; }
+.solid-cta:hover { transform: translateY(-2px); }
+.mobile-menu summary { list-style: none; cursor: pointer; }
+.mobile-menu summary::-webkit-details-marker { display: none; }
+.service-item:nth-child(odd) { border-bottom: 1px solid var(--border); }
+.service-icon { background: var(--surface); border: 1px solid var(--border); }
+.stat-block { border-color: var(--border); }
+.why-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .97), oklch(0.03 0 0 / .8) 50%, oklch(0.03 0 0 / .2)); }
+.contact-background { object-position: center 55%; }
+.contact-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .94) 0%, oklch(0.03 0 0 / .77) 34%, oklch(0.03 0 0 / .24) 58%, oklch(0.03 0 0 / .08) 100%); }
+.contact-link { display: flex; flex-direction: column; align-items: center; gap: .55rem; font-size: .75rem; text-align: center; border-radius: .75rem; padding: .25rem; outline: none; }
+.contact-link > svg { color: var(--primary); border: 2px solid var(--primary); border-radius: 999px; padding: .42rem; width: 2.25rem; height: 2.25rem; transition: background-color .2s ease, color .2s ease; }
+.contact-link:hover > svg { background: var(--primary); color: var(--primary-foreground); }
+.contact-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.contact-link:focus-visible > svg { background: var(--primary); color: var(--primary-foreground); }
+.contact-link span, .contact-link small { display: block; }
+.contact-link b { font-size: .75rem; }
+.contact-link small { margin-top: .2rem; color: var(--soft); }
+.contact-page-hero-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .98) 0%, oklch(0.03 0 0 / .9) 35%, oklch(0.03 0 0 / .35) 68%, oklch(0.03 0 0 / .56) 100%); }
+.section-label { position: relative; padding-left: 3rem; font-size: .625rem; font-weight: 700; letter-spacing: .32em; text-transform: uppercase; color: var(--soft); }
+.section-label::before { content: ""; position: absolute; left: 0; top: 50%; width: 2rem; height: 2px; background: var(--primary); }
+.contact-field { position: relative; display: block; }
+.contact-field > svg { position: absolute; z-index: 1; left: .9rem; top: .95rem; width: 1rem; height: 1rem; color: var(--soft); }
+.contact-field > input { padding-left: 2.6rem; }
+.location-band { background: oklch(0.075 0 0); }
+.location-grid { opacity: .3; background-image: linear-gradient(25deg, transparent 46%, var(--border) 47%, var(--border) 49%, transparent 50%), linear-gradient(155deg, transparent 46%, var(--border) 47%, var(--border) 49%, transparent 50%); background-size: 150px 90px; }
+.faq-item[open] summary span { transform: rotate(45deg); }
+.faq-item summary span { transition: transform .2s ease; }
+.registration-hero { background: radial-gradient(circle at 78% 42%, oklch(0.2 0.02 28 / .35), transparent 24%), linear-gradient(115deg, var(--background), var(--surface)); }
+.registration-grid { opacity: .22; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 56px 56px; mask-image: linear-gradient(90deg, transparent, black 45%, black); }
+.registration-card { transition: border-color .2s ease, transform .2s ease, background-color .2s ease; }
+.registration-card:hover { border-color: var(--primary); background-color: var(--surface); transform: translateY(-4px); }
+.registration-form input[type="date"] { color-scheme: dark; }
+.registration-form select { color-scheme: dark; }
+.registration-form input[type="file"]::file-selector-button { margin-right: .75rem; border: 0; border-radius: 999px; background: var(--primary); padding: .45rem .8rem; color: var(--primary-foreground); font-weight: 700; }
+.social-link { display: grid; width: 1.8rem; height: 1.8rem; place-items: center; border-radius: 999px; background: var(--foreground); color: var(--background); transition: background-color .2s ease; }
+.social-link:hover { background: var(--primary); color: var(--primary-foreground); }
+.hero-shell i { width: 3px; height: 3px; background: var(--primary); }
+.hero-shell b { width: 2.4rem; height: 2px; background: var(--primary); }
+.global-hero-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .97), oklch(0.03 0 0 / .78) 32%, transparent 69%); }
+.incubation-community-shade { background: linear-gradient(90deg, var(--background) 0%, var(--background) 26%, oklch(0.03 0 0 / .86) 48%, oklch(0.03 0 0 / .2) 82%); }
+.global-cta-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .92), oklch(0.03 0 0 / .5) 48%, transparent 80%); }
+.about-hero-shade { background: linear-gradient(90deg, oklch(0.02 0 0 / .98) 0%, oklch(0.02 0 0 / .9) 34%, oklch(0.02 0 0 / .24) 66%, oklch(0.02 0 0 / .18) 100%); }
+.about-vision-shade { background: linear-gradient(90deg, oklch(0.02 0 0 / .96) 0%, oklch(0.02 0 0 / .82) 56%, oklch(0.02 0 0 / .28) 100%); }
+.about-image-shade { background: linear-gradient(180deg, oklch(0.02 0 0 / .12), transparent 45%, oklch(0.02 0 0 / .35)); }
+.about-global-shade { background: linear-gradient(90deg, oklch(0.02 0 0 / .98) 0%, oklch(0.02 0 0 / .9) 45%, oklch(0.02 0 0 / .46) 75%, oklch(0.02 0 0 / .34) 100%); }
+@media (min-width: 1024px) { .service-item:nth-child(odd) { border-bottom: 0; } }
+@media (max-width: 640px) {
+  .hero-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .96), oklch(0.03 0 0 / .66)); }
+  .hero-shell { min-height: 560px; }
+  .eyebrow { letter-spacing: .22em; }
+  .contact-background { object-position: 57% center; }
+  .contact-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .98), oklch(0.03 0 0 / .72)); }
+  .contact-page-hero-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .98), oklch(0.03 0 0 / .72)); }
+  .contact-link { min-width: 0; }
+  .contact-link small { font-size: .625rem; }
+  .registration-grid { background-size: 34px 34px; }
+  .global-hero-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .94), oklch(0.03 0 0 / .67)); }
+  .about-hero-shade, .about-vision-shade, .about-global-shade { background: linear-gradient(90deg, oklch(0.02 0 0 / .96), oklch(0.02 0 0 / .7)); }
+  .incubation-community-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .95), oklch(0.03 0 0 / .65)); }
+.global-cta-shade { background: linear-gradient(90deg, oklch(0.03 0 0 / .95), oklch(0.03 0 0 / .5)); }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+
+/* Country logos ship in two artworks: one for dark surfaces, one for light.
+   Each theme shows only its matching file so flag colours stay intact. */
+.logo-show-dark { display: block; }
+.light .logo-show-dark { display: none; }
+.logo-show-light { display: none; }
+.light .logo-show-light { display: block; }
+
+.logo-preview-light {
+  --surface: oklch(0.94 0.004 80);
+  --foreground: oklch(0.16 0.005 40);
+  --border: oklch(0.81 0.005 80);
+}
+.logo-preview-dark {
+  --surface: oklch(0.085 0 0);
+  --foreground: oklch(0.985 0 0);
+  --border: oklch(0.25 0 0);
+}
+
+/* White card surfaces: supporting text reads black, not grey. */
+.bg-card {
+  --muted-foreground: var(--card-foreground);
+  --soft: var(--card-foreground);
+}
+
+/* Footer copyright: each of the three legal lines must stay on one row on phones,
+   so the size shrinks just enough as the screen narrows. */
+.copyright-bar { font-size: max(7px, min(9px, 2.1vw)); }
+@media (min-width: 640px) { .copyright-bar { font-size: 10px; } }
+
+/* Phone footer: nudge Our People and About Us left so their long labels fit one line. */
+@media (min-width: 360px) and (max-width: 639px) {
+  .footer-people { margin-left: -8mm; }
+  .footer-about { margin-left: -4mm; }
+  .footer-people a, .footer-about a { white-space: nowrap; }
+}
+
+/* ===== Diwali festival design (removable) ===== */
+.diwali-art, .diwali-sparkles { display: none; }
+.diwali .diwali-art { display: block; }
+.diwali {
+  --background: oklch(0.15 0.045 15);
+  --footer: oklch(0.11 0.04 15);
+  --surface: oklch(0.2 0.06 20);
+  --card: oklch(0.2 0.06 20);
+  --primary: oklch(0.83 0.16 80);
+  --border: oklch(0.5 0.1 65 / .6);
+  --festival-glow: 0 0 24px oklch(0.8 0.17 70 / .35);
+  --festival-text-glow: 0 0 22px oklch(0.82 0.17 75 / .45);
+  --rangoli: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23e8b84a' stroke-opacity='.13' stroke-width='1.2'%3E%3Ccircle cx='60' cy='60' r='22'/%3E%3Ccircle cx='60' cy='60' r='8'/%3E%3Cpath d='M60 20 Q72 40 60 60 Q48 40 60 20ZM60 100 Q72 80 60 60 Q48 80 60 100ZM20 60 Q40 48 60 60 Q40 72 20 60ZM100 60 Q80 48 60 60 Q80 72 100 60Z'/%3E%3Cpath d='M0 0l12 12M120 0l-12 12M0 120l12-12M120 120l-12-12'/%3E%3C/g%3E%3C/svg%3E");
+}
+.diwali body { background: radial-gradient(ellipse at top, oklch(0.24 0.08 30), transparent 60%), var(--background); }
+.diwali main section:not(.hero-shell):not(.contact-band) { background-image: var(--rangoli); background-size: 120px; }
+.diwali main section + section { border-top: 0; }
+.diwali main > section { position: relative; }
+.diwali main > section:not(:first-child)::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 3px; z-index: 2;
+  background: repeating-linear-gradient(90deg, oklch(0.75 0.18 55) 0 14px, oklch(0.85 0.16 85) 14px 22px, oklch(0.55 0.2 25) 22px 30px);
+  box-shadow: 0 0 12px oklch(0.8 0.17 70 / .6);
+}
+.diwali .hero-shade { background: linear-gradient(90deg, oklch(0.1 0.04 15 / .95) 0%, oklch(0.12 0.05 15 / .75) 35%, transparent 70%); }
+@media (max-width: 767px) { .diwali .hero-shade { background: linear-gradient(180deg, oklch(0.1 0.04 15 / .92) 0%, oklch(0.1 0.04 15 / .7) 55%, oklch(0.1 0.04 15 / .3)); } }
+.diwali .why-shade, .diwali .contact-shade { background: linear-gradient(90deg, oklch(0.1 0.04 15 / .92), oklch(0.1 0.04 15 / .55) 55%, transparent); }
+.diwali .diwali-sparkles {
+  display: block; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background-image: radial-gradient(2px 2px at 20% 30%, oklch(0.95 0.12 85), transparent), radial-gradient(1.5px 1.5px at 60% 15%, oklch(0.95 0.12 85), transparent), radial-gradient(2px 2px at 85% 45%, oklch(0.9 0.15 70), transparent), radial-gradient(1.5px 1.5px at 40% 70%, oklch(0.95 0.12 85), transparent), radial-gradient(2px 2px at 75% 80%, oklch(0.9 0.15 60), transparent);
+  animation: diwali-twinkle 3s ease-in-out infinite alternate;
+}
+@keyframes diwali-twinkle { from { opacity: .35; } to { opacity: 1; } }
+@keyframes diwali-flicker { 0%,100% { box-shadow: var(--festival-glow); } 50% { box-shadow: 0 0 34px oklch(0.8 0.17 70 / .55); } }
+.diwali .solid-cta { background: linear-gradient(135deg, oklch(0.86 0.15 85), oklch(0.72 0.18 55)); animation: diwali-flicker 2.4s ease-in-out infinite; }
+.diwali .headline .text-primary, .diwali h2 .text-primary { background: linear-gradient(90deg, oklch(0.9 0.14 90), oklch(0.75 0.19 50)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.diwali .service-item a:hover { background: oklch(0.25 0.08 30); box-shadow: inset 0 -3px 0 var(--primary); }
+.diwali .service-item svg:first-child, .diwali #about svg { filter: drop-shadow(0 0 8px oklch(0.82 0.17 75 / .7)); }
+.diwali .stat-block strong { text-shadow: 0 0 18px oklch(0.82 0.17 75 / .6); }
+.diwali footer { background-image: var(--rangoli); background-size: 140px; border-top: 2px solid var(--primary); }
+@media (prefers-reduced-motion: reduce) { .diwali .diwali-sparkles, .diwali .solid-cta { animation: none; } }
+
+.diwali .hero-shell > .relative { padding-top: 3.5rem; }
+@media (max-width: 639px) { .diwali .hero-shell > .relative { padding-top: 2.75rem; } .diwali main section:not(.hero-shell):not(.contact-band) { background-size: 90px; } .diwali .solid-cta { width: 100%; justify-content: center; } }
+.diwali { --foreground: oklch(0.96 0.03 85); --soft: oklch(0.9 0.05 80); --muted-foreground: oklch(0.84 0.06 75); --card-foreground: oklch(0.96 0.03 85); --popover: oklch(0.2 0.06 20); --popover-foreground: oklch(0.96 0.03 85); --secondary: oklch(0.25 0.07 25); --secondary-foreground: oklch(0.96 0.03 85); --accent: oklch(0.28 0.08 30); --accent-foreground: oklch(0.92 0.12 85); }
+.diwali .eyebrow { color: oklch(0.86 0.14 82); }
+.diwali input::placeholder, .diwali textarea::placeholder { color: oklch(0.72 0.05 70); }
+
+/* Diwali theme hides the homepage hero tagline */
+.diwali .hero-tagline { display: none !important; }
+
+/* Diwali readability: crisp light text over festive photos in header and hero */
+.diwali header { background-color: oklch(0.12 0.035 20 / .96); }
+.diwali header nav a { color: oklch(0.97 0.03 85); text-shadow: 0 1px 2px oklch(0 0 0 / .8); }
+.diwali header nav a[data-status="active"], .diwali header nav a.active { color: oklch(0.88 0.15 85); }
+.diwali .hero-shell h1, .diwali .hero-shell p, .diwali .hero-shell .text-soft { text-shadow: 0 2px 6px oklch(0 0 0 / .85), 0 0 22px oklch(0 0 0 / .55); }
+.diwali .hero-shell p.text-soft, .diwali .hero-shell .text-soft { color: oklch(0.95 0.035 85); }
+@media (max-width: 1023px) { .diwali .hero-shade { background: linear-gradient(180deg, oklch(0.1 0.04 15 / .7) 0%, oklch(0.1 0.04 15 / .82) 55%, oklch(0.1 0.04 15 / .6) 100%); } }
+.diwali .young-challenge-page { --muted-foreground: oklch(0.9 0.035 85); }
+.diwali .hero-shell h1 .text-primary { text-shadow: none; filter: drop-shadow(0 2px 6px oklch(0 0 0 / .8)); }
+
+/* ===== Chhath Puja festival design (light sunrise palette; rotates with Diwali inside Festive) ===== */
+.chhath-art { display: none; }
+.chhath .chhath-art { display: block; }
+.chhath {
+  --background: oklch(0.975 0.025 85);
+  --footer: oklch(0.93 0.05 75);
+  --surface: oklch(0.945 0.045 80);
+  --card: oklch(0.99 0.015 85);
+  --card-foreground: oklch(0.26 0.06 35);
+  --popover: oklch(0.99 0.015 85);
+  --popover-foreground: oklch(0.26 0.06 35);
+  --foreground: oklch(0.26 0.06 35);
+  --soft: oklch(0.32 0.06 40);
+  --primary: oklch(0.6 0.19 45);
+  --primary-foreground: oklch(0.99 0.01 85);
+  --secondary: oklch(0.92 0.06 80);
+  --secondary-foreground: oklch(0.26 0.06 35);
+  --muted: oklch(0.93 0.04 80);
+  --muted-foreground: oklch(0.4 0.05 45);
+  --accent: oklch(0.9 0.07 135);
+  --accent-foreground: oklch(0.3 0.08 140);
+  --border: oklch(0.82 0.08 70);
+  --input: oklch(0.8 0.07 70);
+  --ring: oklch(0.6 0.19 45);
+  --chhath-leaf: oklch(0.5 0.13 145);
+  --chhath-glow: 0 0 22px oklch(0.8 0.16 70 / .35);
+  --chhath-ripple: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23d97a1f' stroke-opacity='.12' stroke-width='1.2'%3E%3Ccircle cx='70' cy='60' r='16'/%3E%3Cpath d='M70 30v-10M70 100v-10M40 60H30M110 60h-10M49 39l-7-7M98 88l-7-7M91 39l7-7M42 88l7-7'/%3E%3Cpath d='M20 118q12-8 25 0t25 0 25 0 25 0'/%3E%3Cpath d='M30 130q10-6 20 0t20 0 20 0 20 0'/%3E%3C/g%3E%3C/svg%3E");
+}
+.chhath body { background: radial-gradient(ellipse at top, oklch(0.93 0.08 75), transparent 60%), var(--background); }
+.chhath header { background-color: oklch(0.98 0.03 85 / .96); border-bottom: 2px solid var(--primary); }
+.chhath header nav a { color: var(--foreground); }
+.chhath header nav a[data-status="active"], .chhath header nav a.active { color: var(--primary); }
+.chhath .diwali-toran { filter: drop-shadow(0 5px 8px oklch(0.45 0.1 50 / .35)); }
+.chhath main section:not(.hero-shell):not(.contact-band) { background-image: var(--chhath-ripple); background-size: 140px; }
+.chhath footer { background-image: var(--chhath-ripple); background-size: 160px; border-top: 2px solid var(--primary); }
+.chhath :is(h1,h2,h3) .text-primary { background: linear-gradient(90deg, oklch(0.62 0.2 40), oklch(0.72 0.17 65)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.chhath .eyebrow { color: var(--chhath-leaf); }
+.chhath .solid-cta { background: linear-gradient(135deg, oklch(0.7 0.18 55), oklch(0.6 0.2 38)); color: var(--primary-foreground); box-shadow: var(--chhath-glow); }
+.chhath .service-item svg:first-child, .chhath #about svg { color: var(--primary); }
+.chhath .service-item a:hover { background: oklch(0.93 0.06 80); box-shadow: inset 0 -3px 0 var(--primary); }
+.chhath .stat-block strong { color: var(--primary); }
+
+/* Home-page picture bands keep dark sunrise-maroon text over a soft cream veil. */
+:root.light.chhath :is(.hero-shell, .why-panel, .contact-band) {
+  --foreground: oklch(0.24 0.06 35);
+  --soft: oklch(0.3 0.06 40);
+  --muted-foreground: oklch(0.36 0.05 45);
+  color: var(--foreground);
+}
+.chhath .hero-shell::after { background: linear-gradient(0deg, oklch(0.97 0.03 85 / .2), transparent 30%); }
+.chhath .hero-shell h1 .text-primary { text-shadow: none; filter: none; }
+/* White veil kept 80% transparent so the sunrise picture shows through. */
+.chhath .hero-shade { background: linear-gradient(90deg, oklch(0.98 0.03 85 / .2) 0%, oklch(0.98 0.03 85 / .2) 34%, oklch(0.98 0.03 85 / .05) 66%, transparent); }
+.chhath .why-shade, .chhath .contact-shade { background: linear-gradient(90deg, oklch(0.98 0.03 85 / .95), oklch(0.98 0.03 85 / .7) 50%, transparent 80%); }
+.chhath .hero-shell > .relative { padding-top: 3.5rem; }
+@media (max-width: 1023px) {
+  .chhath .hero-shade { background: oklch(0.98 0.03 85 / .2); }
+  .chhath .why-shade, .chhath .contact-shade { background: linear-gradient(90deg, oklch(0.98 0.03 85 / .95), oklch(0.98 0.03 85 / .82)); }
+}
+@media (max-width: 639px) {
+  .chhath .hero-shell > .relative { padding-top: 2.75rem; }
+  .chhath main section:not(.hero-shell):not(.contact-band) { background-size: 100px; }
+  .chhath .solid-cta { width: 100%; justify-content: center; }
+}
+.chhath .young-challenge-page {
+  --background: oklch(0.975 0.025 85);
+  --surface: oklch(0.945 0.045 80);
+  --foreground: oklch(0.24 0.06 35);
+  --primary: oklch(0.58 0.19 42);
+  --muted-foreground: oklch(0.38 0.05 45);
+  --border: oklch(0.82 0.08 70);
+  --challenge-gold: oklch(0.5 0.12 65);
+  --challenge-wine: oklch(0.93 0.05 75);
+  --challenge-glow: var(--chhath-glow);
+}
+.chhath .young-challenge-page .young-challenge-hero { --background: oklch(0.975 0.025 85); --foreground: oklch(0.24 0.06 35); }
+.chhath .hero-tagline { display: none !important; }
+
+/* Festive = Chhath Puja colours always; garland and pictures crossfade Chhath ↔ Diwali every 5 seconds. */
+.diwali-decoration > .diwali-toran { position: absolute; inset: 0; transition: opacity .7s ease; }
+.festive-toran-diwali, :root[data-festive-decor="diwali"] .festive-toran-chhath { opacity: 0; }
+:root[data-festive-decor="diwali"] .festive-toran-diwali { opacity: 1; }
+.chhath .diwali-art { display: block; opacity: 0; }
+.chhath :is(.diwali-art, .chhath-art) { transition: opacity .7s ease; }
+:root.chhath[data-festive-decor="diwali"] .diwali-art { opacity: 1; }
+:root.chhath[data-festive-decor="diwali"] .chhath-art { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .diwali-decoration > .diwali-toran, .chhath :is(.diwali-art, .chhath-art) { transition: none; } }
+
+/* Festive only: every white haze over pictures is 90% see-through (10% opacity). */
+.chhath .hero-shell::after { background: linear-gradient(0deg, oklch(0.97 0.03 85 / .1), transparent 30%); }
+.chhath .hero-shade { background: linear-gradient(90deg, oklch(0.98 0.03 85 / .1) 0%, oklch(0.98 0.03 85 / .1) 34%, oklch(0.98 0.03 85 / .03) 66%, transparent); }
+.chhath :is(.why-shade, .contact-shade) { background: linear-gradient(90deg, oklch(0.98 0.03 85 / .1), oklch(0.98 0.03 85 / .07) 50%, transparent 80%); }
+.chhath .young-challenge-page .young-challenge-shade, .chhath .innovators-shade, .chhath .prototype-hero .hero-shade { background: linear-gradient(90deg, oklch(0.975 0.025 85 / .1), oklch(0.975 0.025 85 / .08) 30%, transparent 68%); }
+@media (max-width: 1023px) {
+  .chhath .hero-shade { background: oklch(0.98 0.03 85 / .1); }
+  .chhath :is(.why-shade, .contact-shade) { background: oklch(0.98 0.03 85 / .1); }
+}
+/* Festive: plain text, no glow or shadow behind any words. */
+.chhath :is(h1, h2, h3, h4, p, li, span, a, .headline, .text-soft) { text-shadow: none; }
+
+/* Festive on phones: thin haze, plain text (no box behind the hero paragraph); photo framed so the busy part sits low. */
+@media (max-width: 639px) {
+  .chhath .hero-shell .headline { font-size: clamp(2.35rem, 11vw, 2.9rem); line-height: .9; }
+  .chhath .hero-shell .hero-copy { margin-top: 1.1rem; font-size: .95rem; line-height: 1.55; font-weight: 500; color: oklch(0.2 0.06 35); }
+  .chhath .hero-shell .hero-pillars { gap: .5rem; letter-spacing: .14em; color: oklch(0.2 0.06 35); }
+  .chhath .hero-shell .hero-pillars b { display: none; }
+  .chhath .hero-shell :is(.chhath-art, .diwali-art) { object-position: 78% 100%; }
+  .chhath .why-panel :is(h2, p), .chhath .contact-band :is(h2, p) { overflow-wrap: anywhere; }
+}
+@media (max-width: 639px) {
+  .chhath .why-panel .why-copy { padding: .75rem .9rem; border-radius: .6rem; background: oklch(0.985 0.025 85 / .82); color: oklch(0.24 0.06 35); }
+  .chhath .contact-band .max-w-4xl { width: fit-content; max-width: 100%; padding: .6rem .9rem; border-radius: .6rem; background: oklch(0.985 0.025 85 / .82); }
+  .chhath .contact-band .mt-\[38px\] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1.25rem; }
+  .chhath .contact-link { padding: .75rem .5rem; background: oklch(0.985 0.025 85 / .88); box-shadow: 0 2px 10px oklch(0.45 0.1 50 / .12); }
+  .chhath .contact-link > svg { width: 2.5rem; height: 2.5rem; padding: .5rem; background: oklch(0.99 0.015 85); }
+  .chhath .contact-link small { color: oklch(0.36 0.05 45); }
+  .chhath .service-item svg:first-child { width: 28px; height: 28px; }
+}
+/* Festive covers the regular photos with festival pictures, so skip loading the hidden ones. */
+.chhath .base-art { display: none; }
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* The employee workspace has a restrained palette, independent of public festival decoration. */
+.crm-workspace, [role="dialog"]:has(form [name="ownerId"]), [role="dialog"]:has(input[name="employeeCode"]) {
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.24 0.01 260);
+  --surface: oklch(0.965 0.005 260);
+  --muted-foreground: oklch(0.49 0.01 260);
+  --border: oklch(0.88 0.005 260);
+  --input: var(--border);
+  --primary: oklch(0.53 0.2 25);
+  --primary-foreground: oklch(1 0 0);
+  --accent: oklch(0.94 0.005 260);
+  --accent-foreground: var(--foreground);
+  letter-spacing: 0;
+}
+.crm-workspace section { background-image: none !important; }
+.crm-workspace header { background: var(--background); border-bottom: 1px solid var(--border); }
+.crm-progress { accent-color: var(--crm-success); }
+.crm-workspace input, .crm-workspace select { max-width: 100%; }

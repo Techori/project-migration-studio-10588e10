@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794590077627,
+      "tag": "0000_core_admin_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794590167873,
+      "tag": "0001_website_forms_people_employees",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794590312555,
+      "tag": "0002_education_support_and_crm",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794590368471,
+      "tag": "0003_education_ack_default",
+      "breakpoints": true
+    }
+  ]
+}
