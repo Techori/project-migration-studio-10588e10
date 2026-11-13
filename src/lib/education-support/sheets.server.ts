@@ -31,6 +31,15 @@ async function sheets<T>(path: string, init: { method?: string; body?: unknown; 
 
 type ValueRange = { range?: string; values?: string[][] };
 
+/** Grow the Responses tab when new columns are needed (Google rejects writes beyond the grid). */
+async function ensureColumns(count: number) {
+  const meta = await sheets<{ sheets?: { properties?: { sheetId?: number; title?: string; gridProperties?: { columnCount?: number } } }[] }>("", { query: { fields: "sheets.properties" } });
+  const tab = meta.sheets?.find(t => t.properties?.title === SHEET_TAB)?.properties;
+  const have = tab?.gridProperties?.columnCount ?? 0;
+  if (tab?.sheetId === undefined || have >= count) return;
+  await sheets(":batchUpdate", { method: "POST", body: { requests: [{ appendDimension: { sheetId: tab.sheetId, dimension: "COLUMNS", length: count - have } }] } });
+}
+
 async function readHeader(): Promise<string[]> {
   const r = await sheets<ValueRange>(`/values/${SHEET_TAB}!1:1`);
   const header = r.values?.[0] ?? [];
@@ -40,6 +49,7 @@ async function readHeader(): Promise<string[]> {
     const missing = sheetHeaders().filter(h => !have.has(h.toLowerCase()));
     if (!missing.length) return header;
     const start = header.length + 1;
+    await ensureColumns(start + missing.length - 1);
     await sheets(`/values/${SHEET_TAB}!${columnLetter(start)}1:${columnLetter(start + missing.length - 1)}1`, { method: "PUT", query: { valueInputOption: "RAW" }, body: { values: [missing] } });
     return [...header, ...missing];
   }
