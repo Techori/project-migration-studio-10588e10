@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Scholarship form: Google Sheet backup with acknowledgement numbers, student/admin editing that can also read from the sheet
+- [ ] Replace the three Razorpay payment links with Razorpay embed codes: waiting on the three embed codes from the user
 - [x] Move the project into this Lovable project: pages, images, backend tables, storage and AI features rebuilt; contact form and AI ideas verified
 - [ ] Import existing records and users: waiting on exports from the old project
 - [ ] First admin: sign up at /admin, confirm email, claim admin; then verify admin, CRM, imports and file restore
