@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronLeft, ChevronRight, Download, Eye, RefreshCw, Search, Check, X, Shield, AlertTriangle, Sparkles, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, RefreshCw, Search, Check, X, Shield, AlertTriangle, Sparkles, ShieldCheck, Pencil, Sheet } from "lucide-react";
+import { EducationSupportForm } from "./education-support-form";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
-import { listEducationSupport, reviewEducationSupport, getEducationPrivateDetails, runEducationChecks, confirmEducationChecks } from "@/lib/education-support.functions";
+import { listEducationSupport, reviewEducationSupport, getEducationPrivateDetails, runEducationChecks, confirmEducationChecks, getEducationRegistrationForEdit, syncEducationSheet } from "@/lib/education-support.functions";
 import { approvalBlocker, flagCounts, flagFieldLabels, type ReviewFlag } from "@/lib/education-support/flags";
 import { stateCodes } from '@/lib/education-support/numbering';
 import { applicationTypeKeys, applicationTypes, paymentStatuses, paymentStatusLabels, registrationStatuses, registrationStatusLabels, studentCategories, type ApplicationType, type StudentCategory } from "@/lib/education-support/rules";
@@ -30,6 +31,14 @@ export function EducationSupportAdmin() {
   const [checkedEveryFlag, setCheckedEveryFlag] = useState(false);
   const [confirmNote, setConfirmNote] = useState("");
   const list = useServerFn(listEducationSupport);
+  const loadForEdit = useServerFn(getEducationRegistrationForEdit);
+  const syncSheet = useServerFn(syncEducationSheet);
+  const [editing, setEditing] = useState<{ id: string; values: Record<string, string | boolean> } | null>(null);
+  const syncMutation = useMutation({
+    mutationFn: () => syncSheet(),
+    onSuccess: async r => { await queryClient.invalidateQueries({ queryKey: ["admin-education-support"] }); toast.success(`Google Sheet sync: ${r.imported} added to the database, ${r.appended} added to the sheet.`); if (r.skipped.length) toast.warning(`${r.skipped.length} sheet row(s) skipped: ${r.skipped.slice(0, 3).map(x => `${x.ackNumber} (${x.reason})`).join("; ")}`); },
+    onError: e => toast.error(e.message),
+  });
   const review = useServerFn(reviewEducationSupport);
   const queryClient = useQueryClient();
   const params = { page, ...(filters.search ? { search: filters.search } : {}), ...(filters.category ? { category: filters.category } : {}), ...(filters.applicationType ? { applicationType: filters.applicationType } : {}), ...(filters.paymentStatus ? { paymentStatus: filters.paymentStatus } : {}), ...(filters.flags ? { flags: filters.flags } : {}) };
@@ -75,6 +84,7 @@ export function EducationSupportAdmin() {
         <Button variant="outline" onClick={() => exportMutation.mutate('csv')} disabled={exportMutation.isPending}><Download /> Export CSV</Button>
         <Button variant="outline" onClick={() => exportMutation.mutate('xlsx')} disabled={exportMutation.isPending}><Download /> {exportMutation.isPending ? 'Preparing…' : 'Prepare Excel'}</Button>
         {exportFile && <Button asChild><a href={exportFile.url} download={exportFile.name}><Download />Download {exportFile.name.endsWith('xlsx') ? 'Excel' : 'CSV'}</a></Button>}
+        <Button variant="outline" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}><Sheet /> {syncMutation.isPending ? "Syncing…" : "Sync Google Sheet"}</Button>
         <Button variant="outline" size="icon" aria-label="Refresh education support registrations" onClick={() => query.refetch()}><RefreshCw /></Button>
       </div>
     </div>
@@ -100,7 +110,7 @@ export function EducationSupportAdmin() {
         <td className="px-3 py-3">{applicationTypes[r.application_type as ApplicationType]?.en ?? r.application_type}<br /><span className="text-xs text-muted-foreground">₹{r.registration_fee}</span></td>
         <td className="px-3 py-3 text-xs">{paymentStatusLabels[r.payment_status as keyof typeof paymentStatusLabels] ?? r.payment_status}{r.payment_reference && <><br /><span className="font-mono">{r.payment_reference}</span></>}</td>
         <td className="px-3 py-3 text-xs"><FlagBadge flags={r.review_flags as ReviewFlag[]} confirmed={Boolean(r.flags_confirmed_at)} /></td>
-        <td className="px-3 py-3 text-xs">{registrationStatusLabels[r.status as keyof typeof registrationStatusLabels] ?? r.status}<br /><strong>{r.approval_status}</strong></td>
+        <td className="px-3 py-3 text-xs">{r.form_status === "started" ? <strong className="text-destructive">Form not finished</strong> : registrationStatusLabels[r.status as keyof typeof registrationStatusLabels] ?? r.status}<br /><strong>{r.approval_status}</strong>{r.employee_verified_at && <><br /><span className="text-primary">Verified by employee</span></>}</td>
         <td className="px-3 py-3"><Button variant="outline" size="icon" aria-label={`View ${r.ack_number}`} onClick={() => { setSelected(r.id); setReason(r.status_reason); setDetails(null); setCheckedEveryFlag(false); setConfirmNote(""); }}><Eye /></Button></td>
       </tr>)}</tbody>
     </table></div>
@@ -117,7 +127,10 @@ export function EducationSupportAdmin() {
         <Button disabled={mutation.isPending || Boolean(approvalBlocker(row))} title={approvalBlocker(row) ?? undefined} onClick={() => mutation.mutate({ id: row.id, approvalStatus: 'approved', reason })}><Check />Approve registration</Button>
         <Button variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: row.id, approvalStatus: 'rejected', reason })}><X />Reject registration</Button>
         <Button variant="outline" disabled={detailsBusy} onClick={() => { setDetailsBusy(true); void privateDetails({ data: { id: row.id } }).then(r => setDetails(r.details)).catch(e => toast.error(e.message)).finally(() => setDetailsBusy(false)); }}><Shield />View private bank & KYC</Button>
+        <Button variant="outline" onClick={() => { void loadForEdit({ data: { id: row.id } }).then(r => setEditing({ id: row.id, values: r.values })).catch(e => toast.error(e.message)); }}><Pencil />Edit registration</Button>
       </div>
+      {row.employee_verified_at && <p className="mt-3 text-sm">Verified by employee on {new Date(row.employee_verified_at).toLocaleString("en-IN")}{row.employee_verification_note ? ` — ${row.employee_verification_note}` : ""}</p>}
+      {editing?.id === row.id && <div className="mt-6"><EducationSupportForm lang="en" adminEdit={{ id: row.id, values: editing.values, onCancel: () => setEditing(null), onDone: () => { setEditing(null); toast.success("Registration saved."); void queryClient.invalidateQueries({ queryKey: ["admin-education-support"] }); } }} /></div>}
       {approvalBlocker(row) && row.approval_status !== "approved" && <p className="mt-2 text-sm text-muted-foreground">Approval locked: {approvalBlocker(row)}</p>}
       <ReviewChecks row={row} busy={checksMutation.isPending || confirmMutation.isPending} checkedEveryFlag={checkedEveryFlag} setCheckedEveryFlag={setCheckedEveryFlag} note={confirmNote} setNote={setConfirmNote}
         onRun={ai => checksMutation.mutate({ id: row.id, ai })} onConfirm={() => confirmMutation.mutate(row.id)} />

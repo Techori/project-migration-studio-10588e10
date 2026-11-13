@@ -76,4 +76,4 @@ export const pgYears = ["1st", "2nd", "Other"] as const;
 export const studyModes = ["Regular", "Distance", "Online"] as const;
 export const genders = ["Female", "Male", "Other", "Prefer not to say"] as const;
 export const guardianRelationships = ["Father", "Mother", "Legal Guardian", "Other"] as const;
-export const coordinatorTypes = ["School Coordinator", "College Coordinator", "University Coordinator", "Institutional Representative", "Independent Student Coordinator", "Other"] as const;
+export const coordinatorTypes = ["RILOYD Employee", "School Coordinator", "College Coordinator", "University Coordinator", "Institutional Representative", "Independent Student Coordinator", "Other"] as const;

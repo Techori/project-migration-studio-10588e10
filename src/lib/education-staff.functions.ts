@@ -43,7 +43,25 @@ export const getEducationStaffLeads = createServerFn({ method: 'POST' }).middlew
     const { data: team } = await supabaseAdmin.from('education_staff_access').select('referral_code').eq('manager_id', context.userId).eq('active', true);
     codes.push(...(team ?? []).map(t => t.referral_code));
   }
-  const { data: rows, error } = await supabaseAdmin.from('education_support_registrations').select('ack_number, student_name, student_category, coordinator_code, payment_status, approval_status, created_at').in('coordinator_code', codes).order('created_at', { ascending: false }).limit(500);
+  const { data: rows, error } = await supabaseAdmin.from('education_support_registrations').select('ack_number, student_name, father_name, mother_name, date_of_birth, student_category, current_class, course_name, institution_name, district, state, coordinator_code, form_status, payment_status, approval_status, employee_verified_at, employee_verification_note, created_at').in('coordinator_code', codes).order('created_at', { ascending: false }).limit(500);
   if (error) throw new Error('Your referrals could not be loaded.');
   return { designation: staff.designation, code: staff.referral_code, rows: rows ?? [] };
 });
+/** BDE/BDM marks a referred, completed registration as checked. Payment confirmation and approval stay with admins. */
+export const verifyEducationReferral = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
+  .inputValidator((v: unknown) => z.object({ ackNumber: z.string().trim().max(20), note: z.string().trim().max(300) }).parse(v))
+  .handler(async ({ context, data }) => {
+    const { data: staff } = await context.supabase.from('education_staff_access').select('*').eq('user_id', context.userId).eq('active', true).maybeSingle();
+    if (!staff) throw new Error('Active BDE or BDM access required.');
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const codes = [staff.referral_code];
+    if (staff.designation === 'BDM') {
+      const { data: team } = await supabaseAdmin.from('education_staff_access').select('referral_code').eq('manager_id', context.userId).eq('active', true);
+      codes.push(...(team ?? []).map(t => t.referral_code));
+    }
+    const { data: rows, error } = await supabaseAdmin.from('education_support_registrations')
+      .update({ employee_verified_at: new Date().toISOString(), employee_verified_by: context.userId, employee_verification_note: data.note })
+      .eq('ack_number', data.ackNumber).in('coordinator_code', codes).eq('form_status', 'completed').select('ack_number');
+    if (error || !rows?.length) throw new Error('Only completed registrations from your referrals can be verified.');
+    return { ok: true };
+  });

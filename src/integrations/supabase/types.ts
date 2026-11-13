@@ -575,6 +575,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           city: string
+          completed_at: string | null
           coordinator: Json
           coordinator_code: string | null
           coordinator_id: string | null
@@ -588,11 +589,15 @@ export type Database = {
           education: Json
           education_sector: string | null
           email: string
+          employee_verification_note: string
+          employee_verified_at: string | null
+          employee_verified_by: string | null
           father_name: string
           flags_checked_at: string | null
           flags_confirm_note: string
           flags_confirmed_at: string | null
           flags_confirmed_by: string | null
+          form_status: string
           gender: string
           guardian_consent_at: string | null
           guardian_email: string | null
@@ -632,6 +637,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           city: string
+          completed_at?: string | null
           coordinator?: Json
           coordinator_code?: string | null
           coordinator_id?: string | null
@@ -645,11 +651,15 @@ export type Database = {
           education?: Json
           education_sector?: string | null
           email: string
+          employee_verification_note?: string
+          employee_verified_at?: string | null
+          employee_verified_by?: string | null
           father_name: string
           flags_checked_at?: string | null
           flags_confirm_note?: string
           flags_confirmed_at?: string | null
           flags_confirmed_by?: string | null
+          form_status?: string
           gender: string
           guardian_consent_at?: string | null
           guardian_email?: string | null
@@ -689,6 +699,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           city?: string
+          completed_at?: string | null
           coordinator?: Json
           coordinator_code?: string | null
           coordinator_id?: string | null
@@ -702,11 +713,15 @@ export type Database = {
           education?: Json
           education_sector?: string | null
           email?: string
+          employee_verification_note?: string
+          employee_verified_at?: string | null
+          employee_verified_by?: string | null
           father_name?: string
           flags_checked_at?: string | null
           flags_confirm_note?: string
           flags_confirmed_at?: string | null
           flags_confirmed_by?: string | null
+          form_status?: string
           gender?: string
           guardian_consent_at?: string | null
           guardian_email?: string | null
@@ -877,6 +892,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_options: {
+        Row: {
+          key: string
+          label: string
+          payment_link: string | null
+          programme: string
+          razorpay_button_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          label: string
+          payment_link?: string | null
+          programme: string
+          razorpay_button_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          label?: string
+          payment_link?: string | null
+          programme?: string
+          razorpay_button_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       payment_provider_tokens: {
         Row: {

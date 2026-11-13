@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://riloyd-project-migration-studio.lovable.app/sitemap.xml
+Sitemap: https://www.riloyd.in/sitemap.xml

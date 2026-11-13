@@ -36,6 +36,13 @@
       "when": 1794591827475,
       "tag": "0004_education_backup_ack_numbers",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794593900661,
+      "tag": "0005_education_steps_payment_options",
+      "breakpoints": true
     }
   ]
 }

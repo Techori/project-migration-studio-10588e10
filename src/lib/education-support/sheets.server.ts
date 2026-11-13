@@ -31,10 +31,28 @@ async function sheets<T>(path: string, init: { method?: string; body?: unknown; 
 
 type ValueRange = { range?: string; values?: string[][] };
 
+/** Grow the Responses tab when new columns are needed (Google rejects writes beyond the grid). */
+async function ensureColumns(count: number) {
+  const meta = await sheets<{ sheets?: { properties?: { sheetId?: number; title?: string; gridProperties?: { columnCount?: number } } }[] }>("", { query: { fields: "sheets.properties" } });
+  const tab = meta.sheets?.find(t => t.properties?.title === SHEET_TAB)?.properties;
+  const have = tab?.gridProperties?.columnCount ?? 0;
+  if (tab?.sheetId === undefined || have >= count) return;
+  await sheets(":batchUpdate", { method: "POST", body: { requests: [{ appendDimension: { sheetId: tab.sheetId, dimension: "COLUMNS", length: count - have } }] } });
+}
+
 async function readHeader(): Promise<string[]> {
   const r = await sheets<ValueRange>(`/values/${SHEET_TAB}!1:1`);
   const header = r.values?.[0] ?? [];
-  if (header.length) return header;
+  if (header.length) {
+    // Columns added in later versions go to the end of the existing header row.
+    const have = new Set(header.map(h => h.trim().toLowerCase()));
+    const missing = sheetHeaders().filter(h => !have.has(h.toLowerCase()));
+    if (!missing.length) return header;
+    const start = header.length + 1;
+    await ensureColumns(start + missing.length - 1);
+    await sheets(`/values/${SHEET_TAB}!${columnLetter(start)}1:${columnLetter(start + missing.length - 1)}1`, { method: "PUT", query: { valueInputOption: "RAW" }, body: { values: [missing] } });
+    return [...header, ...missing];
+  }
   const fresh = sheetHeaders();
   await sheets(`/values/${SHEET_TAB}!A1:${columnLetter(fresh.length)}1`, { method: "PUT", query: { valueInputOption: "RAW" }, body: { values: [fresh] } });
   return fresh;
@@ -78,6 +96,8 @@ export async function readAllSheetRecords(): Promise<{ rowNumber: number; header
 /** Overwrite rows in place (one request for all rows). */
 export async function writeSheetRows(rows: { rowNumber: number; header: string[]; record: SheetRecord }[]) {
   if (!rows.length) return;
+  const header = await readHeader();
+  rows = rows.map(r => ({ ...r, header }));
   await sheets(`/values:batchUpdate`, {
     method: "POST",
     body: { valueInputOption: "RAW", data: rows.map(r => ({ range: `${SHEET_TAB}!A${r.rowNumber}:${columnLetter(r.header.length)}${r.rowNumber}`, values: [toSheetRow(r.record, r.header)] })) },
