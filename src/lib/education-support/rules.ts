@@ -161,7 +161,7 @@ export type EducationPrivateValues = z.infer<typeof educationPrivateSchema>;
 export const educationLookupSchema = z.object({
   ackNumber: z.string().trim().toUpperCase().regex(ackNumberPattern, "Enter your acknowledgement number exactly as shown on your receipt."),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the date of birth."),
-  state: oneOf(indianStates, "Select the state."),
+  state: z.string().refine(v => (indianStates as readonly string[]).includes(v), "Select the state."),
 });
 export type EducationLookup = z.infer<typeof educationLookupSchema>;
 
