@@ -65,6 +65,6 @@ use the editor.
 - Prototype AI payment/permission pauses need an explicit admin reset, never automatic retries.
 
 - Student review sets only approved/rejected via an admin-validated server function and column-scoped RLS; approval never publishes minors or confirms payment.
-- The site has no online payment gateway: programme fees are shown for information and paid through the verified accounts on `/payment`; never add checkout code without an explicit request, so no form implies a confirmed payment.
+- Payment fees use admin-editable links or Razorpay buttons (payment_options) plus the accounts on `/payment`; paying never auto-confirms a registration.
 - RILOYD Foundation lives at `/foundation` (no external site); EN/HI copy in `foundation-copy.ts`, rules in `foundation.ts`, forms in the admin Foundation tab, so menu, footer and admin stay in sync.
 - Moved accounts reset their password via /reset-password.
