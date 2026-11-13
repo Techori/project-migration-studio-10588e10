@@ -38,7 +38,9 @@ export const eduLabels: Record<string, [string, string]> = {
 
 export const eduSteps: Record<string, [string, string]> = {
   bank: ["Bank & identity details", "बैंक और पहचान जानकारी"],
-  education: ["Category & education", "श्रेणी और शिक्षा"],
+  basic: ["Basic details", "मूल जानकारी"],
+  payment: ["Pay registration fee", "पंजीकरण शुल्क भरें"],
+  education: ["Education details", "शिक्षा जानकारी"],
   personal: ["Personal details", "व्यक्तिगत जानकारी"],
   guardian: ["Parent / guardian", "अभिभावक"],
   coordinator: ["Coordinator", "कोऑर्डिनेटर"],

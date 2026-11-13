@@ -17,14 +17,14 @@ export type FormFieldKey = (typeof formFieldKeys)[number];
 export const boolFormFields: readonly FormFieldKey[] = ["guardianConsent", "withoutCoordinator"];
 
 export type SheetMeta = {
-  ackNumber: string; submittedAt: string; savedInDatabase: "Yes" | "Backup only"; editedAt: string; editedBy: string;
+  ackNumber: string; submittedAt: string; savedInDatabase: "Yes" | "Backup only"; formStatus: string; editedAt: string; editedBy: string;
   paymentStatus: string; paymentReference: string; fee: string;
   bankLast4: string; aadhaarLast4: string; declarations: string; privateCiphertext: string; receiptHash: string;
 };
 export type SheetRecord = { meta: SheetMeta; values: Record<FormFieldKey, string | boolean> };
 
 const metaHead: [keyof SheetMeta, string][] = [
-  ["ackNumber", "Acknowledgement No"], ["submittedAt", "Submitted At"], ["savedInDatabase", "Saved In Database"],
+  ["ackNumber", "Acknowledgement No"], ["submittedAt", "Submitted At"], ["savedInDatabase", "Saved In Database"], ["formStatus", "Form Status"],
   ["editedAt", "Last Edited At"], ["editedBy", "Edited By"], ["paymentStatus", "Payment Status"], ["paymentReference", "Payment ID"], ["fee", "Registration Fee (Rs)"],
 ];
 const metaTail: [keyof SheetMeta, string][] = [
