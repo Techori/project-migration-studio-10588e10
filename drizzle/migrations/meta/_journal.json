@@ -50,6 +50,13 @@
       "when": 1794629176261,
       "tag": "0006_zoho_payment_links",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794629844413,
+      "tag": "0007_tighten_public_read_policies",
+      "breakpoints": true
     }
   ]
 }

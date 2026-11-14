@@ -57,9 +57,28 @@ function Locked({ group }: { group: PersonGroup }) {
   </div>;
 }
 
+function useMemberAccess(session: Session | null) {
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!session) { setAllowed(null); return; }
+    let live = true;
+    supabase.rpc("can_view_people_profiles").then(({ data }) => { if (live) setAllowed(data === true); });
+    return () => { live = false; };
+  }, [session]);
+  return allowed;
+}
+
+function MembersOnly({ group }: { group: PersonGroup }) {
+  return <div className="mt-9 border border-border bg-surface p-6 sm:p-8">
+    <div className="flex items-center gap-3"><Lock className="text-primary" size={22} /><p className="font-extrabold">Verified members only</p></div>
+    <p className="mt-2 text-sm text-muted-foreground">{peopleGroups[group].label} profiles are visible to Riloyd team members and approved applicants. Once your registration is approved, sign in with the same email to view them.</p>
+  </div>;
+}
+
 export function ProfileGrid({ group }: { group: PersonGroup }) {
   const config = peopleGroups[group];
   const { session, ready } = useSession();
+  const allowed = useMemberAccess(session);
   const [rows, setRows] = useState<PersonProfile[] | null>(null);
 
   useEffect(() => {
@@ -74,7 +93,7 @@ export function ProfileGrid({ group }: { group: PersonGroup }) {
         <div><p className="eyebrow text-[10px] font-bold uppercase text-soft">Profiles</p><h2 className="mt-4 text-3xl font-black uppercase sm:text-5xl">{config.label}</h2></div>
         {session && <button type="button" onClick={() => supabase.auth.signOut()} className="flex items-center gap-1 text-xs text-muted-foreground"><LogOut size={13} /> Sign out</button>}
       </div>
-      {!ready ? null : !session ? <Locked group={group} /> : rows === null ? <p className="mt-9 text-sm text-muted-foreground">Loading…</p> : rows.length === 0
+      {!ready ? null : !session ? <Locked group={group} /> : allowed === false ? <MembersOnly group={group} /> : rows === null || allowed === null ? <p className="mt-9 text-sm text-muted-foreground">Loading…</p> : rows.length === 0
         ? <p className="mt-9 text-sm text-muted-foreground">Profiles will be published here soon.</p>
         : <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((p) => <Link key={p.id} to={profileRoutes[group]} params={{ slug: p.slug }} className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-primary hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
@@ -93,6 +112,7 @@ export function ProfileGrid({ group }: { group: PersonGroup }) {
 export function ProfileDetail({ group, slug }: { group: PersonGroup; slug: string }) {
   const config = peopleGroups[group];
   const { session, ready } = useSession();
+  const allowed = useMemberAccess(session);
   const [profile, setProfile] = useState<PersonProfile | null | undefined>(undefined);
 
   useEffect(() => {
@@ -105,7 +125,7 @@ export function ProfileDetail({ group, slug }: { group: PersonGroup; slug: strin
     <section className="border-b border-border py-14 sm:py-20">
       <div className="mx-auto max-w-[1100px] px-5 sm:px-6">
         <Link to={listRoutes[group]} className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-primary"><ArrowLeft size={14} /> Back to {config.label}</Link>
-        {!ready ? null : !session ? <Locked group={group} /> : profile === undefined ? <p className="mt-8 text-sm text-muted-foreground">Loading…</p> : profile === null ? <p className="mt-8 text-sm">Profile not found.</p> :
+        {!ready ? null : !session ? <Locked group={group} /> : allowed === false ? <MembersOnly group={group} /> : profile === undefined || allowed === null ? <p className="mt-8 text-sm text-muted-foreground">Loading…</p> : profile === null ? <p className="mt-8 text-sm">Profile not found.</p> :
           <div className="mt-8 overflow-hidden rounded-3xl border border-border bg-surface shadow-xl">
             <div className="h-2 bg-gradient-to-r from-primary via-primary/60 to-primary/20" />
             <div className="grid gap-8 p-6 sm:p-10 md:grid-cols-[260px_1fr]">

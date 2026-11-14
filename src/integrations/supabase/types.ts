@@ -1371,6 +1371,7 @@ export type Database = {
         Returns: undefined
       }
       admin_setup_metadata: { Args: never; Returns: Json }
+      can_view_people_profiles: { Args: never; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
       consume_form_submission_limit: {
         Args: { _key_hash: string }
