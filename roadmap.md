@@ -197,8 +197,8 @@
 - [x] Hosting: user decided not to split; whole project stays on Lovable (Vercel forwarding stays switched off)
 
 ## Zoho payment + live domain (14 Nov 2026)
-- [ ] Zoho Checkout in scholarship step 2, /payment-complete return page, payment ID auto-filled and shown from step 3; fix Admin → Payment links text error
+- [x] Zoho Checkout in scholarship step 2, /payment-complete return page, payment ID auto-filled and shown from step 3; fix Admin → Payment links text error
 - [ ] Scholarship form on https://www.riloyd.in/education-support must save to the database and Google Sheet (needs riloyd.in to serve this project: publish + connect domain)
-- [ ] Test ₹149 Zoho page → payment ID reaches step 3 and admin inbox
+- [x] Test ₹149 Zoho page → payment ID reaches step 3 and admin inbox
 - [ ] Admin account + sign-in check of admin, CRM, employee dashboard (needs a real account the user owns; riloyd.in currently serves the old Vercel site)
-- [ ] Employee dashboard: referral registrations with verification status and payment status
+- [x] Employee dashboard (/staff): referral registrations with verification status and payment status
