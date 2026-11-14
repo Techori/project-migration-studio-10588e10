@@ -34,7 +34,7 @@ export function PaymentOptionsAdmin() {
   for (const o of (query.data ?? []).filter(o => (paymentOptionKeys as readonly string[]).includes(o.key))) groups.set(o.programme, [...(groups.get(o.programme) ?? []), o]);
   return <section>
     <h2 className="text-xl font-bold">Payment links</h2>
-    <p className="mt-2 text-sm text-muted-foreground">Paste the payment page link or the Zoho Checkout embed code for each fee. Leave it empty to hide the payment button. In Zoho, set the page\'s Thank You redirect to {origin}/payment-complete so the payment ID comes back to the form. Changes show on the website straight away.</p>
+    <p className="mt-2 text-sm text-muted-foreground">Paste the payment page link or the Zoho Checkout embed code for each fee. Leave it empty to hide the payment button. In Zoho, set each page&apos;s Thank You redirect to https://www.riloyd.in/payment-complete so the payment ID comes back to the form. Changes show on the website straight away.</p>
     {query.isPending && <p className="mt-4 text-sm">Loading…</p>}
     {query.error && <p className="mt-4 text-sm text-destructive">{query.error.message}</p>}
     {[...groups.entries()].map(([programme, options]) => <div key={programme} className="mt-6"><h3 className="font-bold">{programme}</h3>{options.map(o => <OptionRow key={`${o.key}:${o.payment_link}`} option={o} />)}</div>)}
