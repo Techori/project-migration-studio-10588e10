@@ -7,6 +7,7 @@ const TITLE = "Payment complete | RILOYD";
 const DESCRIPTION = "Return page after paying a RILOYD registration fee. Your payment ID is passed back to your open registration form.";
 
 export const Route = createFileRoute("/payment-complete")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: TITLE },
