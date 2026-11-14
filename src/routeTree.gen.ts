@@ -19,6 +19,7 @@ import { Route as EducationSupportRouteImport } from './routes/education-support
 import { Route as FoundationRouteImport } from './routes/foundation'
 import { Route as FundingProgrammeRouteImport } from './routes/funding-programme'
 import { Route as PaymentRouteImport } from './routes/payment'
+import { Route as PaymentCompleteRouteImport } from './routes/payment-complete'
 import { Route as PrototypeFundingRouteImport } from './routes/prototype-funding'
 import { Route as ResearchRouteImport } from './routes/research'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -96,6 +97,11 @@ const FundingProgrammeRoute = FundingProgrammeRouteImport.update({
 const PaymentRoute = PaymentRouteImport.update({
   id: '/payment',
   path: '/payment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentCompleteRoute = PaymentCompleteRouteImport.update({
+  id: '/payment-complete',
+  path: '/payment-complete',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrototypeFundingRoute = PrototypeFundingRouteImport.update({
@@ -253,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/foundation': typeof FoundationRoute
   '/funding-programme': typeof FundingProgrammeRoute
   '/payment': typeof PaymentRoute
+  '/payment-complete': typeof PaymentCompleteRoute
   '/prototype-funding': typeof PrototypeFundingRoute
   '/research': typeof ResearchRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/foundation': typeof FoundationRoute
   '/funding-programme': typeof FundingProgrammeRoute
   '/payment': typeof PaymentRoute
+  '/payment-complete': typeof PaymentCompleteRoute
   '/prototype-funding': typeof PrototypeFundingRoute
   '/research': typeof ResearchRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -334,6 +342,7 @@ export interface FileRoutesById {
   '/foundation': typeof FoundationRoute
   '/funding-programme': typeof FundingProgrammeRoute
   '/payment': typeof PaymentRoute
+  '/payment-complete': typeof PaymentCompleteRoute
   '/prototype-funding': typeof PrototypeFundingRoute
   '/research': typeof ResearchRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -376,6 +385,7 @@ export interface FileRouteTypes {
     | '/foundation'
     | '/funding-programme'
     | '/payment'
+    | '/payment-complete'
     | '/prototype-funding'
     | '/research'
     | '/reset-password'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/foundation'
     | '/funding-programme'
     | '/payment'
+    | '/payment-complete'
     | '/prototype-funding'
     | '/research'
     | '/reset-password'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/foundation'
     | '/funding-programme'
     | '/payment'
+    | '/payment-complete'
     | '/prototype-funding'
     | '/research'
     | '/reset-password'
@@ -497,6 +509,7 @@ export interface RootRouteChildren {
   FoundationRoute: typeof FoundationRoute
   FundingProgrammeRoute: typeof FundingProgrammeRoute
   PaymentRoute: typeof PaymentRoute
+  PaymentCompleteRoute: typeof PaymentCompleteRoute
   PrototypeFundingRoute: typeof PrototypeFundingRoute
   ResearchRoute: typeof ResearchRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -597,6 +610,13 @@ declare module '@tanstack/react-router' {
       path: '/payment'
       fullPath: '/payment'
       preLoaderRoute: typeof PaymentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-complete': {
+      id: '/payment-complete'
+      path: '/payment-complete'
+      fullPath: '/payment-complete'
+      preLoaderRoute: typeof PaymentCompleteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prototype-funding': {
@@ -809,6 +829,7 @@ const rootRouteChildren: RootRouteChildren = {
   FoundationRoute: FoundationRoute,
   FundingProgrammeRoute: FundingProgrammeRoute,
   PaymentRoute: PaymentRoute,
+  PaymentCompleteRoute: PaymentCompleteRoute,
   PrototypeFundingRoute: PrototypeFundingRoute,
   ResearchRoute: ResearchRoute,
   ResetPasswordRoute: ResetPasswordRoute,

@@ -7,7 +7,7 @@ import { adminUpdateEducationRegistration, getReferralCoordinator, lookupEducati
 import { applicationTypeKeys, applicationTypes, educationBasicSchema, educationCoreSchema, educationPrivateSchema, eduStepFields, eduStepKeys, firstDetailsStep, isMinor, stepErrors, type ApplicationType, type EducationLookup, type EduStepKey, type StudentCategory } from "@/lib/education-support/rules";
 import { coordinatorTypes, coursesFor, educationSectors, genders, guardianRelationships, indianStates, pgYears, schoolBoards, schoolClasses, schoolTypes, studyModes, ugYears } from "@/lib/education-support/catalog";
 import { eduSteps, lbl, type EduLang } from "@/lib/education-support/labels";
-import { educationPaymentKey } from "@/lib/payment-options";
+import { educationPaymentKey, PAYMENT_RETURN_KEY, readPaymentMessage, readStoredPaymentId } from "@/lib/payment-options";
 
 type Values = Record<string, string | boolean>;
 const DRAFT_KEY = "riloyd-education-support-draft-v2";
@@ -24,7 +24,7 @@ const withoutPrivate = (v: Values) => { const c = { ...v }; for (const k of priv
 const inputClass = "mt-1.5 w-full rounded-lg border border-edu-navy/20 bg-edu-paper px-3 py-2.5 text-sm text-edu-ink outline-none transition focus:border-edu-royal focus:ring-2 focus:ring-edu-royal/20 aria-[invalid=true]:border-destructive read-only:bg-edu-sky/60";
 
 /** A registration that already has an acknowledgement number. */
-type Session = { verify: EducationLookup; paymentStatus: string; hasPrivateDetails: boolean; createdAt: string };
+type Session = { verify: EducationLookup; paymentStatus: string; hasPrivateDetails: boolean; createdAt: string; paymentReference?: string };
 type Done = { ackNumber: string; createdAt: string; paymentStatus: string; applicationType: ApplicationType };
 type Referral = { code: string; name: string; mobile: string; email: string; type: string };
 
@@ -47,8 +47,11 @@ export function EducationSupportForm({ lang, initialCode, adminEdit }: { lang: E
   const submitFull = useServerFn(submitEducationRegistration);
   const adminSave = useServerFn(adminUpdateEducationRegistration);
   const lookupReferral = useServerFn(getReferralCoordinator);
+  const savePaymentId = useServerFn(submitEducationPaymentReference);
+  const [returnedId, setReturnedId] = useState("");
   const t = (k: string) => lbl(lang, k);
   const isAdmin = Boolean(adminEdit);
+  const isAdminEdit = isAdmin;
 
   // Resume an unfinished registration saved on this device (never bank or Aadhaar details).
   useEffect(() => {
@@ -78,6 +81,32 @@ export function EducationSupportForm({ lang, initialCode, adminEdit }: { lang: E
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCode]);
+
+  // Payment ID handed back by the payment return page (inside the form or in another tab).
+  useEffect(() => {
+    if (adminEdit) return;
+    const pick = (id: string | null) => { if (id) setReturnedId(id); };
+    try { pick(readStoredPaymentId(localStorage.getItem(PAYMENT_RETURN_KEY))); } catch { /* storage blocked */ }
+    const onMessage = (e: MessageEvent) => { if (e.origin === window.location.origin) pick(readPaymentMessage(e.data)); };
+    const onStorage = (e: StorageEvent) => { if (e.key === PAYMENT_RETURN_KEY) pick(readStoredPaymentId(e.newValue)); };
+    window.addEventListener("message", onMessage);
+    window.addEventListener("storage", onStorage);
+    return () => { window.removeEventListener("message", onMessage); window.removeEventListener("storage", onStorage); };
+  }, [adminEdit]);
+  useEffect(() => {
+    if (!returnedId || !session || isAdminEdit || session.paymentStatus === "paid" || session.paymentReference === returnedId) return;
+    let cancelled = false;
+    const id = returnedId;
+    void savePaymentId({ data: { verify: session.verify, reference: id } }).then(() => {
+      if (cancelled) return;
+      try { localStorage.removeItem(PAYMENT_RETURN_KEY); } catch { /* ignore */ }
+      setSession(s => s ? { ...s, paymentStatus: "reference_submitted", paymentReference: id } : s);
+      setStep(n => n === 1 ? 2 : n);
+      setNotice("");
+    }).catch(err => { if (!cancelled) setNotice((lang === "en" ? `Payment ID ${id} could not be saved: ` : `पेमेंट आईडी ${id} सेव नहीं हुई: `) + (err instanceof Error ? err.message : "")); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returnedId, session?.verify.ackNumber]);
 
   const dob = String(values["dateOfBirth"] ?? "");
   const minor = /^\d{4}-\d{2}-\d{2}$/.test(dob) && isMinor(dob);
@@ -190,6 +219,7 @@ export function EducationSupportForm({ lang, initialCode, adminEdit }: { lang: E
     <p className="mt-4 text-xs font-bold uppercase tracking-wider text-edu-royal [&:lang(hi)]:tracking-normal">{lang === "en" ? `Step ${step + 1} of ${steps.length}` : `चरण ${step + 1} / ${steps.length}`}</p>
     <h3 className="mt-1 text-2xl font-black text-edu-navy">{eduSteps[current.key]?.[lang === "en" ? 0 : 1]}</h3>
 
+    {session?.paymentReference && current.key !== "basic" && current.key !== "payment" && <p className="mt-4 flex items-center gap-2 rounded-lg bg-edu-sky px-3 py-2 text-sm text-edu-navy"><CheckCircle2 className="h-4 w-4 shrink-0 text-edu-royal" aria-hidden="true" />{lang === "en" ? "Payment ID" : "पेमेंट आईडी"}: <strong className="select-all">{session.paymentReference}</strong> <span className="text-xs opacity-75">{lang === "en" ? "(received, awaiting confirmation)" : "(मिल गई, पुष्टि बाकी)"}</span></p>}
     <div className="mt-6 grid gap-4 sm:grid-cols-2">
       {current.key === "basic" && <>
         {field("studentName", { full: true })}{field("dateOfBirth", { type: "date" })}{field("mobile", { type: "tel", inputMode: "tel" })}
@@ -219,11 +249,11 @@ export function EducationSupportForm({ lang, initialCode, adminEdit }: { lang: E
       {current.key === "payment" && session && appType && <div className="space-y-5 sm:col-span-2">
         <div className="rounded-2xl bg-edu-navy p-5 text-edu-paper">
           <p className="text-sm font-semibold">{lang === "en" ? applicationTypes[appType].en : applicationTypes[appType].hi} · ₹{applicationTypes[appType].fee}</p>
-          <div className="mt-4"><PaymentOptionButton optionKey={educationPaymentKey(appType)} fallbackLink={applicationTypes[appType].paymentLink} label={lang === "en" ? `Pay ₹${applicationTypes[appType].fee} securely` : `₹${applicationTypes[appType].fee} सुरक्षित रूप से भरें`} className="inline-flex h-11 items-center gap-2 rounded-full bg-edu-paper px-6 text-sm font-black text-edu-navy hover:bg-edu-sky" /></div>
+          {paymentStatus === "pending" && <div className="mt-4"><PaymentOptionButton embed prefill={{ name: String(values["studentName"] ?? ""), email: String(values["email"] ?? ""), mobile: String(values["mobile"] ?? "") }} optionKey={educationPaymentKey(appType)} fallbackLink={applicationTypes[appType].paymentLink} label={lang === "en" ? `Pay ₹${applicationTypes[appType].fee} securely` : `₹${applicationTypes[appType].fee} सुरक्षित रूप से भरें`} className="inline-flex h-11 items-center gap-2 rounded-full bg-edu-paper px-6 text-sm font-black text-edu-navy hover:bg-edu-sky" /></div>}
           <p className="mt-3 text-xs text-edu-paper/75">{lang === "en" ? `Please mention your acknowledgement number ${session.verify.ackNumber} and the same email/mobile on the payment page if asked.` : `पूछे जाने पर भुगतान पेज पर अपनी पावती संख्या ${session.verify.ackNumber} और वही ईमेल/मोबाइल डालें।`}</p>
         </div>
-        <PaymentReference lang={lang} verify={session.verify} status={paymentStatus} onSaved={() => setSession({ ...session, paymentStatus: "reference_submitted" })} />
-        <p className="text-xs text-edu-ink/70">{lang === "en" ? "You can continue now and share the payment ID later. Your form is complete only after the final step." : "आप अभी आगे बढ़ सकते हैं और पेमेंट आईडी बाद में भेज सकते हैं। अंतिम चरण के बाद ही फ़ॉर्म पूरा होगा।"}</p>
+        <PaymentReference key={session.paymentReference ?? ""} lang={lang} verify={session.verify} status={paymentStatus} initial={session.paymentReference ?? ""} onSaved={ref => setSession({ ...session, paymentStatus: "reference_submitted", paymentReference: ref })} />
+        <p className="text-xs text-edu-ink/70">{lang === "en" ? "After paying, the payment ID is filled in automatically. If it does not appear, type it in above. You can also continue now and share it later. Your form is complete only after the final step." : "भुगतान के बाद पेमेंट आईडी अपने आप भर जाएगी। न दिखे तो ऊपर लिख दें। आप अभी आगे बढ़कर बाद में भी भेज सकते हैं। अंतिम चरण के बाद ही फ़ॉर्म पूरा होगा।"}</p>
       </div>}
 
       {current.key === "education" && <>
@@ -320,14 +350,14 @@ function ReopenPanel({ lang, open, setOpen, onOpened }: { lang: EduLang; open: b
   </form>;
 }
 
-function PaymentReference({ lang, verify, status, onSaved }: { lang: EduLang; verify: EducationLookup; status: string; onSaved: () => void }) {
+function PaymentReference({ lang, verify, status, initial, onSaved }: { lang: EduLang; verify: EducationLookup; status: string; initial: string; onSaved: (reference: string) => void }) {
   const saveRef = useServerFn(submitEducationPaymentReference);
-  const [reference, setReference] = useState("");
+  const [reference, setReference] = useState(initial);
   const [state, setState] = useState<{ busy: boolean; error?: string }>({ busy: false });
   if (status === "paid") return <p className="rounded-2xl border border-edu-navy/10 bg-edu-sky/60 p-5 text-sm text-edu-navy">{lang === "en" ? "Payment confirmed." : "भुगतान की पुष्टि हो गई।"}</p>;
   async function send(e: React.FormEvent) {
     e.preventDefault(); setState({ busy: true });
-    try { await saveRef({ data: { verify, reference: reference.trim() } }); setState({ busy: false }); onSaved(); }
+    try { await saveRef({ data: { verify, reference: reference.trim() } }); setState({ busy: false }); onSaved(reference.trim()); }
     catch (err) { setState({ busy: false, error: err instanceof Error ? err.message : "Please try again." }); }
   }
   return <div className="rounded-2xl border border-edu-navy/10 bg-edu-sky/60 p-5">
@@ -339,7 +369,7 @@ function PaymentReference({ lang, verify, status, onSaved }: { lang: EduLang; ve
       <Button type="submit" disabled={state.busy || reference.trim().length < 6} className="h-11 rounded-full bg-edu-royal px-6 text-edu-paper hover:bg-edu-royal/90">{state.busy ? "…" : lang === "en" ? "Send payment ID" : "आईडी भेजें"}</Button>
     </form>
     {state.error && <p role="alert" className="mt-2 text-xs font-semibold text-destructive">{state.error}</p>}
-    <p className="mt-2 text-xs text-edu-ink/60">{lang === "en" ? "Find it in the Razorpay receipt email/SMS after paying." : "भुगतान के बाद Razorpay की रसीद ईमेल/SMS में मिलेगी।"}</p>
+    <p className="mt-2 text-xs text-edu-ink/60">{lang === "en" ? "Find it in the Zoho payment receipt email/SMS after paying." : "भुगतान के बाद Zoho की रसीद ईमेल/SMS में मिलेगी।"}</p>
   </div>;
 }
 
