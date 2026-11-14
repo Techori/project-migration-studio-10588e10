@@ -195,3 +195,7 @@
 - [ ] Complete BDE / BDM / Support login and role access (BDE own leads, BDM team, admin all) and verify each role
 - [x] Payment transaction ID must be unique across all registrations (never repeat)
 - [x] Hosting: user decided not to split; whole project stays on Lovable (Vercel forwarding stays switched off)
+
+## Zoho payment + live domain (14 Nov 2026)
+- [ ] Zoho Checkout in scholarship step 2, /payment-complete return page, payment ID auto-filled and shown from step 3; fix Admin → Payment links text error
+- [ ] Scholarship form on https://www.riloyd.in/education-support must save to the database and Google Sheet (needs riloyd.in to serve this project: publish + connect domain)
